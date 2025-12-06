@@ -1,0 +1,66 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-09T11:04:24.770Z",
+  "groupName": "Os aleatoriamente! 🤡",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "222823339532469@lid",
+      "msg": 62,
+      "cmd": 19,
+      "figu": 5,
+      "pushname": "•Ƥα𝚞ℓo",
+      "firstSeen": "2025-11-09T11:04:24.771Z",
+      "lastActivity": "2025-11-26T19:29:51.321Z"
+    },
+    {
+      "id": "26629048918042@lid",
+      "msg": 44,
+      "cmd": 0,
+      "figu": 7,
+      "pushname": "Mendezz",
+      "firstSeen": "2025-11-09T11:04:47.801Z",
+      "lastActivity": "2025-11-26T20:10:51.483Z"
+    },
+    {
+      "id": "264922910949614@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Otavio",
+      "firstSeen": "2025-11-10T23:54:27.757Z",
+      "lastActivity": "2025-11-10T23:54:27.757Z"
+    },
+    {
+      "id": "201855258906710@lid",
+      "msg": 17,
+      "cmd": 0,
+      "figu": 1,
+      "pushname": "Bispo",
+      "firstSeen": "2025-11-19T09:59:46.914Z",
+      "lastActivity": "2025-11-23T21:38:05.089Z"
+    }
+  ],
+  "antibtn": false,
+  "exit": {
+    "enabled": true
+  },
+  "soadm": false
+}

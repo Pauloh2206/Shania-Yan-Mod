@@ -11060,7 +11060,7 @@ case 'musica':
         if (!q) return reply(`🎵 *YOUTUBE PLAYER* 🎵\n\n📝 Digite o nome da música ou link do YouTube.\n\n*Exemplo:* ${prefix}play Shania Yan Attack on Titan`);
 
         // 1. OBTÉM OS METADADOS
-        await reply(`🔍 Buscando informações de *"${q}"*...`); // Esta é a linha que você viu no log!
+        await reply(`🔍 _Buscando MP3 e informações de_ *"${q}"*...`); // Esta é a linha que você viu no log!
         const videoInfo = await getVideoMetadata(q);
 
         // 2. VERIFICA O TAMANHO MÁXIMO (30 minutos)
@@ -11072,13 +11072,14 @@ case 'musica':
         const caption = `
 🎵 *Música Encontrada* 🎵
 
+👨‍💻 *Dev:* Paulo Hernani costa
 📌 *Título:* ${videoInfo.title}
 👤 *Canal:* ${videoInfo.author}
 ⏱ *Duração:* ${videoInfo.duration}
 👀 *Visualizações:* ${videoInfo.views}
 🔗 *Link:* ${videoInfo.url}
 
-🎧 *Baixando e processando o áudio em qualidade (128kbps), aguarde...*`;
+🎧 *Baixando e processando o áudio em qualidade (96kbps), aguarde...*`;
 
         // Envia o banner (thumbnail) com a descrição.
         await nazu.sendMessage(from, {

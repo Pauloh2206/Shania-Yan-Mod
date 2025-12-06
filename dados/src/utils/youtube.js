@@ -10,76 +10,76 @@ const TEMP_FOLDER = path.join(process.cwd(), 'temp_downloads');
 
 // Garante que a pasta temporária existe
 if (!fs.existsSync(TEMP_FOLDER)) {
-    fs.mkdirSync(TEMP_FOLDER, { recursive: true });
+  fs.mkdirSync(TEMP_FOLDER, { recursive: true });
 }
 
 /**
- * Busca e retorna metadados (título, autor, thumbnail, duração, views) do primeiro resultado do YouTube.
- * Usa o comando yt-dlp --dump-json.
- * @param {string} query O termo de busca ou URL do YouTube.
- * @returns {Promise<object>} Um objeto contendo os metadados do vídeo.
- */
+* Busca e retorna metadados (título, autor, thumbnail, duração, views) do primeiro resultado do YouTube.
+* Usa o comando yt-dlp --dump-json.
+* @param {string} query O termo de busca ou URL do YouTube.
+* @returns {Promise<object>} Um objeto contendo os metadados do vídeo.
+*/
 export async function getVideoMetadata(query) {
-    // Comando para buscar (ytsearch1) e obter JSON dos metadados
-    const command = `yt-dlp --dump-json "ytsearch1:${query}" --no-playlist --restrict-filenames`;
-    
-    try {
-        // CORREÇÃO: Aumentamos o maxBuffer para 10MB (1024 * 10000) para evitar o erro RangeError
-        const { stdout } = await execPromise(command, { encoding: 'utf8', maxBuffer: 1024 * 10000 });
-        const metadata = JSON.parse(stdout);
+  // Comando para buscar (ytsearch1) e obter JSON dos metadados
+  const command = `yt-dlp --dump-json "ytsearch1:${query}" --no-playlist --restrict-filenames`;
+ 
+  try {
+    // Aumentamos o maxBuffer para 10MB (1024 * 10000) para evitar o erro RangeError
+    const { stdout } = await execPromise(command, { encoding: 'utf8', maxBuffer: 1024 * 10000 });
+    const metadata = JSON.parse(stdout);
 
-        return {
-            title: metadata.title,
-            author: metadata.channel,
-            views: metadata.view_count ? metadata.view_count.toLocaleString('pt-BR') : 'N/A',
-            duration: metadata.duration_string || 'N/A',
-            url: metadata.webpage_url,
-            thumbnail: metadata.thumbnail,
-            seconds: metadata.duration,
-            id: metadata.id 
-        };
-    } catch (error) {
-        // Trata o erro de ferramenta não encontrada
-        if (error.code === 127 || String(error).includes('yt-dlp')) {
-            throw new Error(`❌ Ferramenta 'yt-dlp' não encontrada. Instale no Termux.`);
-        }
-        console.error("Erro ao buscar metadados do YouTube:", error);
-        // O erro de MaxBuffer agora será resolvido, então lançamos um erro mais genérico
-        throw new Error(`Falha ao buscar informações da música. Verifique se o termo de busca está correto.`);
+    return {
+      title: metadata.title,
+      author: metadata.channel,
+      views: metadata.view_count ? metadata.view_count.toLocaleString('pt-BR') : 'N/A',
+      duration: metadata.duration_string || 'N/A',
+      url: metadata.webpage_url,
+      thumbnail: metadata.thumbnail,
+      seconds: metadata.duration,
+      id: metadata.id
+    };
+  } catch (error) {
+    // Trata o erro de ferramenta não encontrada
+    if (error.code === 127 || String(error).includes('yt-dlp')) {
+      throw new Error(`❌ Ferramenta 'yt-dlp' não encontrada. Instale no Termux.`);
     }
+    console.error("Erro ao buscar metadados do YouTube:", error);
+    // Lançamos um erro mais genérico
+    throw new Error(`Falha ao buscar informações da música. Verifique se o termo de busca está correto.`);
+  }
 }
 
 /**
- * Procura um áudio no YouTube, baixa e converte para MP3 em média qualidade (192K) para otimização de velocidade.
- *
- * @param {string} videoId O ID do vídeo a ser baixado (para precisão).
- * @param {string} title O título do vídeo para nomear o arquivo.
- * @returns {Promise<string>} O caminho completo para o arquivo MP3 gerado.
- */
+* Procura um áudio no YouTube, baixa e converte para MP3 em qualidade padrão (128K) para otimização de velocidade e tamanho.
+*
+* @param {string} videoId O ID do vídeo a ser baixado (para precisão).
+* @param {string} title O título do vídeo para nomear o arquivo.
+* @returns {Promise<string>} O caminho completo para o arquivo MP3 gerado.
+*/
 export async function downloadYoutubeMp3(videoId, title) {
-    try {
-        // Gera um nome de arquivo único baseado no timestamp
-        const timestamp = Date.now();
-        // A template de saída usa o ID do vídeo para evitar conflitos
-        const outputTemplate = path.join(TEMP_FOLDER, `${timestamp}_%(title)s.%(ext)s`);
+  try {
+    // Gera um nome de arquivo único baseado no timestamp
+    const timestamp = Date.now();
+    // A template de saída usa o ID do vídeo para evitar conflitos
+    const outputTemplate = path.join(TEMP_FOLDER, `${timestamp}_%(title)s.%(ext)s`);
 
-        // Comando OTIMIZADO: --audio-quality 192K (boa qualidade e rápida conversão)
-        const command = `yt-dlp ${videoId} -x --audio-format mp3 --audio-quality 192K --output "${outputTemplate}" --restrict-filenames`;
+    // COMANDO ATUALIZADO: Usando --audio-quality 128K
+    const command = `yt-dlp ${videoId} -x --audio-format mp3 --audio-quality 128K --output "${outputTemplate}" --restrict-filenames`;
 
-        // Executa o download
-        await execPromise(command);
+    // Executa o download
+    await execPromise(command);
 
-        // Encontra o arquivo baixado
-        const files = fs.readdirSync(TEMP_FOLDER);
-        const downloadedFile = files.find(file => file.startsWith(`${timestamp}_`) && file.endsWith('.mp3'));
+    // Encontra o arquivo baixado
+    const files = fs.readdirSync(TEMP_FOLDER);
+    const downloadedFile = files.find(file => file.startsWith(`${timestamp}_`) && file.endsWith('.mp3'));
 
-        if (!downloadedFile) {
-            throw new Error('Arquivo MP3 não encontrado após o download. Verifique restrições de idade.');
-        }
-
-        return path.join(TEMP_FOLDER, downloadedFile);
-
-    } catch (error) {
-        throw error;
+    if (!downloadedFile) {
+      throw new Error('Arquivo MP3 não encontrado após o download. Verifique restrições de idade.');
     }
+
+    return path.join(TEMP_FOLDER, downloadedFile);
+
+  } catch (error) {
+    throw error;
+  }
 }

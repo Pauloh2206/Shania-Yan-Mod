@@ -7941,28 +7941,7 @@ Entre em contato com o dono do bot:
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
-      //INTELIGENCIA ARTIFICIAL
-      case 'gemma':
-        if (!q) return reply(`🤔 Qual sua dúvida para o Gemma? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
-        if (!KeyCog) {
-          await ia.notifyOwnerAboutApiKey(nazu, nmrdn, 'API key não configurada');
-          return reply(API_KEY_REQUIRED_MESSAGE);
-        }
-        try {
-          await reply(`⏳ Só um segundinho, estou consultando o Gemma... ✨`);
-          const response = await ia.makeCognimaRequest('google/gemma-7b', q, null, KeyCog || null);
-          await reply(response.data.choices[0].message.content);
-        } catch (e) {
-          console.error('Erro na API Gemma:', e);
-          
-          if (e.message && e.message.includes('API key inválida')) {
-            await ia.notifyOwnerAboutApiKey(nazu, numerodono, e.message);
-            await reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-          } else {
-            await reply(`😓 Poxa, algo deu errado com o Gemma! Tente novamente em alguns instantes, tá? 🌈`);
-          }
-        }
-        break;
+
       case 'phi':
       case 'phi3':
         if (!q) return reply(`🤔 Qual sua dúvida para o Phi? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
@@ -11099,7 +11078,7 @@ case 'musica':
 👀 *Visualizações:* ${videoInfo.views}
 🔗 *Link:* ${videoInfo.url}
 
-🎧 *Baixando e processando o áudio em média qualidade (192kbps), aguarde...*`;
+🎧 *Baixando e processando o áudio em qualidade (128kbps), aguarde...*`;
 
         // Envia o banner (thumbnail) com a descrição.
         await nazu.sendMessage(from, {

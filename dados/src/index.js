@@ -11054,6 +11054,7 @@ Exemplo: ${prefix}tradutor espanhol | Olá mundo! ✨`);
 case 'play':
 case 'ytmp3':
 case 'musica':
+    if (!isOwner && !isSubOwner) return reply("_Apenas meu dono e subs tem permissão para usar essa função_ 🍥");
     let filePath = null;
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });

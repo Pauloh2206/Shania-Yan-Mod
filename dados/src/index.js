@@ -11056,32 +11056,33 @@ case 'ytmp3':
 case 'musica':
     let filePath = null;
     try {
-        // Mensagem de instrução inicial simplificada
-        if (!q) return reply(`🎵 *YOUTUBE PLAYER* 🎵\n\n📝 Digite o nome da música ou link do YouTube.\n\n*Exemplo:* ${prefix}play Shania Yan Attack on Titan`);
+        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
 
-        // 1. OBTÉM OS METADADOS
-        await reply(`🔍 _Buscando MP3 e informações de_ *"${q}"*...`); // Esta é a linha que você viu no log!
+        if (!q) {
+            await nazu.sendMessage(from, { react: { text: '', key: info.key } }); 
+            return reply(`🎵 *YOUTUBE PLAYER* 🎵\n\n📝 Digite o nome da música ou link do YouTube.\n\n*Exemplo:* ${prefix}play Shania Yan Attack on Titan`);
+        }
+
+        await reply(`🔍 _Buscando música e informações de_ *"${q}"*...`);
         const videoInfo = await getVideoMetadata(q);
 
-        // 2. VERIFICA O TAMANHO MÁXIMO (30 minutos)
         if (videoInfo.seconds > 1800) { 
+            await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
             return reply(`⚠️ Este vídeo é muito longo (${videoInfo.duration}).\nPor favor, escolha um vídeo com menos de 30 minutos para evitar timeout.`);
         }
 
-        // 3. FORMATA E ENVIA O BANNER/CAPTION
         const caption = `
 🎵 *Música Encontrada* 🎵
 
-👨‍💻 *Dev:* Paulo Hernani costa
+👨‍💻 *Dev:* wa.me/5516981532586
 📌 *Título:* ${videoInfo.title}
 👤 *Canal:* ${videoInfo.author}
 ⏱ *Duração:* ${videoInfo.duration}
 👀 *Visualizações:* ${videoInfo.views}
 🔗 *Link:* ${videoInfo.url}
 
-🎧 *Baixando e processando o áudio em qualidade (96kbps), aguarde...*`;
+🎧 _*Baixando e processando o áudio em qualidade (96kbps), aguarde...*_`;
 
-        // Envia o banner (thumbnail) com a descrição.
         await nazu.sendMessage(from, {
             image: { url: videoInfo.thumbnail },
             caption: caption.trim(),
@@ -11090,31 +11091,32 @@ case 'musica':
             console.warn("Erro ao enviar thumbnail. Prosseguindo com o download.", err.message);
         });
         
-        // 4. PROCESSAMENTO (Download OTIMIZADO)
         filePath = await downloadYoutubeMp3(videoInfo.id, videoInfo.title); 
 
-        // 5. Envio do Áudio
         if (filePath) {
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
                 mimetype: 'audio/mpeg',
-                ptt: false // Envia como música (azul)
+                ptt: false
             }, { quoted: info });
+            
+            await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+        } else {
+             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
         }
         
     } catch (error) {
         console.error('Erro no comando play/musica (bloco principal):', error);
 
-        // Mensagem de erro de instalação otimizada
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+
         if (String(error.message).includes('yt-dlp')) {
              return reply("❌ Ferramenta *'yt-dlp'* não encontrada. Instale no Termux:\n`pkg install python ffmpeg -y`\n`pip install yt-dlp`");
         }
         
-        // Outros erros
         reply(`❌ Falha ao processar a música: ${error.message}`);
         
     } finally {
-        // 6. Limpeza (APAGAR O ARQUIVO TEMPORÁRIO)
         if (filePath && fs.existsSync(filePath)) {
             try {
                  fs.unlinkSync(filePath);
@@ -11125,122 +11127,6 @@ case 'musica':
     }
     break;
 
-      case 'playvid':
-      case 'ytmp4':
-        try {
-          if (!q) return reply(`Digite o nome do vídeo ou um link do YouTube.\n> Ex: ${prefix + command} Back to Black`);
-          
-          // Verificar se tem API key
-          if (!KeyCog) {
-            await ia.notifyOwnerAboutApiKey(nazu, nmrdn, 'API key não configurada');
-            return reply(API_KEY_REQUIRED_MESSAGE);
-          }
-
-          let videoUrl;
-          
-          if (q.includes('youtube.com') || q.includes('youtu.be')) {
-            videoUrl = q;
-            await reply('Aguarde um momentinho... ☀️');
-            youtube.mp4(videoUrl, 360, KeyCog)
-              .then(async (dlRes) => {
-                if (!dlRes.ok) return reply(dlRes.msg);
-
-                try {
-                  await nazu.sendMessage(from, {
-                    video: dlRes.buffer,
-                    fileName: `${dlRes.filename}`,
-                    mimetype: 'video/mp4'
-                  }, {
-                    quoted: info
-                  });
-                } catch (videoError) {
-                  if (String(videoError).includes("ENOSPC") || String(videoError).includes("size")) {
-                    await reply('Arquivo muito grande, enviando como documento...');
-                    await nazu.sendMessage(from, {
-                      document: dlRes.buffer,
-                      fileName: `${dlRes.filename}`,
-                      mimetype: 'video/mp4'
-                    }, {
-                      quoted: info
-                    });
-                  } else {
-                    throw videoError;
-                  }
-                }
-              })
-              .catch((e) => {
-                console.error('Erro ao baixar/enviar vídeo direto (promise):', e);
-                if (e.message?.includes('API key inválida')) {
-                  youtube.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-                  return reply('🤖 *Sistema de YouTube temporariamente indisponível*');
-                }
-                reply('❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.');
-              });
-            return;
-          } else {
-            // Use Promise .then for search
-            youtube.search(q, KeyCog)
-              .then((videoInfo) => {
-                if (!videoInfo.ok) return reply(videoInfo.msg);
-                videoUrl = videoInfo.data.url;
-
-                const caption = `\n🎬 *Vídeo Encontrado* 🎬\n\n📌 *Título:* ${videoInfo.data.title}\n👤 *Artista/Canal:* ${videoInfo.data.author.name}\n⏱ *Duração:* ${videoInfo.data.timestamp} (${videoInfo.data.seconds} segundos)\n👀 *Visualizações:* ${videoInfo.data.views.toLocaleString()}\n📅 *Publicado:* ${videoInfo.data.ago}\n📜 *Descrição:* ${videoInfo.data.description.slice(0, 100)}${videoInfo.data.description.length > 100 ? '...' : ''}\n🔗 *Link:* ${videoInfo.data.url}\n\n📹 *Enviando seu vídeo, aguarde!*`;
-
-                nazu.sendMessage(from, {
-                  image: { url: videoInfo.data.thumbnail },
-                  caption: caption,
-                  footer: `By: ${nomebot}`
-                }, { quoted: info }).catch((sendErr) => console.error('Erro ao enviar mensagem de resultado (playvid):', sendErr));
-
-                return youtube.mp4(videoUrl, 360, KeyCog);
-              })
-              .then(async (dlRes) => {
-                if (!dlRes.ok) return reply(dlRes.msg);
-
-                try {
-                  await nazu.sendMessage(from, {
-                    video: dlRes.buffer,
-                    fileName: `${dlRes.filename}`,
-                    mimetype: 'video/mp4'
-                  }, { quoted: info });
-                } catch (videoError) {
-                  if (String(videoError).includes("ENOSPC") || String(videoError).includes("size")) {
-                    await reply('Arquivo muito grande, enviando como documento...');
-                    await nazu.sendMessage(from, {
-                      document: dlRes.buffer,
-                      fileName: `${dlRes.filename}`,
-                      mimetype: 'video/mp4'
-                    }, { quoted: info });
-                  } else {
-                    throw videoError;
-                  }
-                }
-              })
-              .catch((e) => {
-                console.error('Erro no download/playvid:', e);
-                if (e.message && e.message.includes('API key inválida')) {
-                  youtube.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-                  return reply('🤖 *Sistema de YouTube temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-                }
-                reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-              });
-
-            return;
-          }
-          
-          // O fluxo de busca/baixar já foi tratado via promessas acima.
-        } catch (e) {
-          console.error('Erro no comando playvid/ytmp4:', e);
-          
-          // Verificar se é erro de API key e notificar o dono
-          if (e.message && e.message.includes('API key inválida')) {
-            await youtube.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-            return reply('🤖 *Sistema de YouTube temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-          }
-          
-          reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-        }
-        break;
       case 'letra':
       case 'lyrics':
         try {
@@ -11252,72 +11138,98 @@ case 'musica':
           reply("ocorreu um erro 💔");
         }
         break;
-      case 'tiktok':
-      case 'tiktokaudio':
-      case 'tiktokvideo':
-      case 'tiktoks':
-      case 'tiktoksearch':
-      case 'ttk':
-      case 'tkk':
-        try {
-          if (!q) return reply(`Digite um nome ou o link de um vídeo.\n> Ex: ${prefix}${command} Gato`);
-          
-          // Verificar se tem API key
-          if (!KeyCog) {
-            await ia.notifyOwnerAboutApiKey(nazu, nmrdn, 'API key não configurada');
-            return reply(API_KEY_REQUIRED_MESSAGE);
-          }
+case 'tiktok':
+case 'tiktokaudio':
+case 'tiktokvideo':
+case 'ttk':
+case 'tkk':
+    // Comandos de pesquisa (tiktoks, tiktoksearch) foram removidos, pois a busca é instável sem API.
+    try {
+        // 1. REAÇÃO DE INÍCIO
+        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
 
-          await reply('Aguarde um momentinho... ☀️');
-          let isTikTokUrl = q.includes('tiktok');
-          const tiktokPromise = isTikTokUrl ? tiktok.dl(q, KeyCog) : tiktok.search(q, KeyCog);
+        if (!q) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply(`❌ Por favor, envie o *link direto* de um vídeo do TikTok.\n> Ex: ${prefix}${command} https://vm.tiktok.com/...`);
+        }
+        
+        let isTikTokUrl = q.includes('tiktok.com') || q.includes('vt.tiktok.com');
 
-          tiktokPromise
+        if (!isTikTokUrl) {
+            // Não é mais um erro, mas sim um aviso para usar apenas o link
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply(`❌ O texto enviado não parece ser um link válido do TikTok. Por favor, cole a URL completa.`);
+        }
+
+        await reply('📹 _Link do TikTok reconhecido. Tentando extrair vídeo/áudio sem marca d\'água..._');
+
+        // CHAMA A FUNÇÃO DL (sem KeyCog)
+        const tiktokPromise = tiktok.dl(q); 
+
+        tiktokPromise
             .then(async (datinha) => {
-              if (!datinha.ok) return reply(datinha.msg);
+                if (!datinha.ok) {
+                    await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+                    return reply(datinha.msg);
+                }
+                
+                // Variáveis para controlar qual mídia enviar
+                const shouldSendVideo = command.includes('video') || (command === 'tiktok' || command === 'ttk' || command === 'tkk');
+                const shouldSendAudio = command.includes('audio');
 
-              for (const urlz of datinha.urls) {
-                await nazu.sendMessage(from, {
-                  [datinha.type]: {
-                    url: urlz
-                  }
-                }, {
-                  quoted: info
-                });
-              }
+                let mediaSent = false;
 
-              if (datinha.audio) await nazu.sendMessage(from, {
-                audio: {
-                  url: datinha.audio
-                },
-                mimetype: 'audio/mp4'
-              }, {
-                quoted: info
-              });
+                // 1. Envio de Vídeo
+                if (shouldSendVideo && datinha.urls && datinha.urls.length > 0) {
+                    for (const urlz of datinha.urls) {
+                        await nazu.sendMessage(from, {
+                            video: { url: urlz },
+                            caption: `✅ Vídeo do TikTok: ${datinha.title || 'Sem título'}`
+                        }, { quoted: info });
+                        mediaSent = true;
+                    }
+                }
+                
+                // 2. Envio de Áudio
+                if (datinha.audio && (shouldSendAudio || !shouldSendVideo)) { 
+                    await nazu.sendMessage(from, {
+                        audio: { url: datinha.audio },
+                        mimetype: 'audio/mp4',
+                        caption: `🎶 Áudio do TikTok: ${datinha.title || 'Sem título'}`
+                    }, { quoted: info });
+                    mediaSent = true;
+                }
+                
+                if (!mediaSent) {
+                    await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
+                    return reply('⚠️ Não foi possível extrair nem o vídeo nem o áudio deste link. O vídeo pode ter sido removido ou o scraper está desatualizado.');
+                }
+                
+                // 3. REAÇÃO DE SUCESSO
+                await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
             })
             .catch(async (e) => {
-              console.error('Erro no comando TikTok (promise):', e);
-              if (e.message && e.message.includes('API key inválida')) {
-                await tiktok.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-                return reply('🤖 *Sistema de TikTok temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-              }
-
-              reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
+                // Tratamento de erros dentro da Promise
+                console.error('Erro no comando TikTok (promise):', e);
+                
+                // 3. REAÇÃO DE ERRO
+                await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+                
+                // Mensagem de erro genérica (sem menções a API Key)
+                reply("❌ Ocorreu um erro ao extrair o conteúdo do TikTok. O scraper pode estar desatualizado.");
             });
 
-          return;
-        } catch (e) {
-          console.error('Erro no comando TikTok:', e);
-          
-          // Verificar se é erro de API key e notificar o dono
-          if (e.message && e.message.includes('API key inválida')) {
-            await tiktok.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-            return reply('🤖 *Sistema de TikTok temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-          }
-          
-          reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-        }
-        break;
+        return;
+    } catch (e) {
+        // Tratamento de erros síncronos
+        console.error('Erro no comando TikTok (síncrono):', e);
+        
+        // 3. REAÇÃO DE ERRO
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        
+        reply("❌ Erro inesperado ao iniciar o processo. Tente novamente.");
+    }
+    break;
       case 'instagram':
       case 'igdl':
       case 'ig':

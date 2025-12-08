@@ -11139,209 +11139,7 @@ case 'musica':
           reply("ocorreu um erro 💔");
         }
         break;
-case 'tiktok':
-case 'tiktokaudio':
-case 'tiktokvideo':
-case 'ttk':
-case 'tkk':
-    // Comandos de pesquisa (tiktoks, tiktoksearch) foram removidos, pois a busca é instável sem API.
-    try {
-        // 1. REAÇÃO DE INÍCIO
-        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
-
-        if (!q) {
-            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-            return reply(`❌ Por favor, envie o *link direto* de um vídeo do TikTok.\n> Ex: ${prefix}${command} https://vm.tiktok.com/...`);
-        }
         
-        let isTikTokUrl = q.includes('tiktok.com') || q.includes('vt.tiktok.com');
-
-        if (!isTikTokUrl) {
-            // Não é mais um erro, mas sim um aviso para usar apenas o link
-            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-            return reply(`❌ O texto enviado não parece ser um link válido do TikTok. Por favor, cole a URL completa.`);
-        }
-
-        await reply('📹 _Link do TikTok reconhecido. Tentando extrair vídeo/áudio sem marca d\'água..._');
-
-        // CHAMA A FUNÇÃO DL (sem KeyCog)
-        const tiktokPromise = tiktok.dl(q); 
-
-        tiktokPromise
-            .then(async (datinha) => {
-                if (!datinha.ok) {
-                    await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-                    return reply(datinha.msg);
-                }
-                
-                // Variáveis para controlar qual mídia enviar
-                const shouldSendVideo = command.includes('video') || (command === 'tiktok' || command === 'ttk' || command === 'tkk');
-                const shouldSendAudio = command.includes('audio');
-
-                let mediaSent = false;
-
-                // 1. Envio de Vídeo
-                if (shouldSendVideo && datinha.urls && datinha.urls.length > 0) {
-                    for (const urlz of datinha.urls) {
-                        await nazu.sendMessage(from, {
-                            video: { url: urlz },
-                            caption: `✅ Vídeo do TikTok: ${datinha.title || 'Sem título'}`
-                        }, { quoted: info });
-                        mediaSent = true;
-                    }
-                }
-                
-                // 2. Envio de Áudio
-                if (datinha.audio && (shouldSendAudio || !shouldSendVideo)) { 
-                    await nazu.sendMessage(from, {
-                        audio: { url: datinha.audio },
-                        mimetype: 'audio/mp4',
-                        caption: `🎶 Áudio do TikTok: ${datinha.title || 'Sem título'}`
-                    }, { quoted: info });
-                    mediaSent = true;
-                }
-                
-                if (!mediaSent) {
-                    await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
-                    return reply('⚠️ Não foi possível extrair nem o vídeo nem o áudio deste link. O vídeo pode ter sido removido ou o scraper está desatualizado.');
-                }
-                
-                // 3. REAÇÃO DE SUCESSO
-                await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
-            })
-            .catch(async (e) => {
-                // Tratamento de erros dentro da Promise
-                console.error('Erro no comando TikTok (promise):', e);
-                
-                // 3. REAÇÃO DE ERRO
-                await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-                
-                // Mensagem de erro genérica (sem menções a API Key)
-                reply("❌ Ocorreu um erro ao extrair o conteúdo do TikTok. O scraper pode estar desatualizado.");
-            });
-
-        return;
-    } catch (e) {
-        // Tratamento de erros síncronos
-        console.error('Erro no comando TikTok (síncrono):', e);
-        
-        // 3. REAÇÃO DE ERRO
-        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-        
-        reply("❌ Erro inesperado ao iniciar o processo. Tente novamente.");
-    }
-    break;
-      case 'instagram':
-      case 'igdl':
-      case 'ig':
-      case 'instavideo':
-      case 'igstory':
-        try {
-          if (!q) return reply(`Digite um link do Instagram.\n> Ex: ${prefix}${command} https://www.instagram.com/reel/DFaq_X7uoiT/?igsh=M3Q3N2ZyMWU1M3Bo`);
-          
-          // Verificar se tem API key
-          if (!KeyCog) {
-            await ia.notifyOwnerAboutApiKey(nazu, nmrdn, 'API key não configurada');
-            return reply(API_KEY_REQUIRED_MESSAGE);
-          }
-
-          await reply('Aguarde um momentinho... ☀️');
-          igdl.dl(q, KeyCog)
-            .then(async (datinha) => {
-              if (!datinha.ok) return reply(datinha.msg);
-
-              for (const item of datinha.data) {
-                await nazu.sendMessage(from, {
-                  [item.type]: item.buff
-                }, {
-                  quoted: info
-                });
-              }
-            })
-            .catch(async (e) => {
-              console.error('Erro no comando Instagram (promise):', e);
-              if (e.message && e.message.includes('API key inválida')) {
-                await igdl.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-                return reply('🤖 *Sistema de Instagram temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-              }
-              reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-            });
-          return;
-        } catch (e) {
-          console.error('Erro no comando Instagram:', e);
-          
-          // Verificar se é erro de API key e notificar o dono
-          if (e.message && e.message.includes('API key inválida')) {
-            await igdl.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-            return reply('🤖 *Sistema de Instagram temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-          }
-          
-          reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-        }
-        break;
-      case 'pinterest':
-      case 'pin':
-        try {
-          if (!q) return reply('Digite o termo para pesquisar no Pinterest. Exemplo: ' + prefix + 'pinterest gatinhos /3');
-
-          // Detecta se é URL de Pinterest antes de qualquer split
-          const PIN_URL_REGEX = /^(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?pinterest\.\w{2,6}(?:\.\w{2})?\/pin\/([0-9a-zA-Z]+)|^https?:\/\/pin\.it\/[a-zA-Z0-9]+/i;
-          let maxImages = 5;
-          let searchTerm = q.trim();
-
-          // Só extrai limite \/N se NÃO for URL
-          if (!PIN_URL_REGEX.test(searchTerm)) {
-            const limitMatch = searchTerm.match(/\s\/\s*(\d{1,2})\s*$/);
-            if (limitMatch) {
-              const parsed = parseInt(limitMatch[1]);
-              maxImages = Math.max(1, Math.min(parsed, 10));
-              searchTerm = searchTerm.replace(/\s\/\s*\d{1,2}\s*$/, '').trim();
-            }
-          } else {
-            // Para URL, baixa 1 mídia (padrão)
-            maxImages = 1;
-          }
-
-          const isPinUrl = PIN_URL_REGEX.test(searchTerm);
-          // Ensure API key is configured
-          if (!KeyCog) {
-            await ia.notifyOwnerAboutApiKey(nazu, nmrdn, 'API key não configurada');
-            return reply(API_KEY_REQUIRED_MESSAGE);
-          }
-          const pinPromise = isPinUrl ? pinterest.dl(searchTerm, KeyCog) : pinterest.search(searchTerm, KeyCog);
-
-          pinPromise
-            .then(async (datinha) => {
-              if (!datinha.ok || !datinha.urls || datinha.urls.length === 0) {
-                return reply(isPinUrl ? 'Não foi possível baixar este link do Pinterest. 😕' : 'Nenhuma imagem encontrada para o termo pesquisado. 😕');
-              }
-
-              const itemsToSend = datinha.urls.slice(0, maxImages);
-              for (const url of itemsToSend) {
-            const message = isPinUrl && datinha.type === 'video'
-              ? { video: { url }, caption: '📌 Download do Pinterest' }
-              : { image: { url }, caption: isPinUrl ? '📌 Download do Pinterest' : `📌 Resultado da pesquisa por "${searchTerm}"` };
-            await nazu.sendMessage(from, message, { quoted: info });
-              }
-            })
-            .catch(async (e) => {
-              console.error('Erro no comando pinterest (promise):', e);
-              if (e.message && e.message.includes('API key inválida')) {
-                await ia.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-                return reply('🤖 *Sistema de Pinterest temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-              }
-              reply("Ocorreu um erro ao processar o Pinterest 💔");
-            });
-          return;
-        } catch (e) {
-          console.error('Erro no comando pinterest:', e);
-          if (e.message && e.message.includes('API key inválida')) {
-            await ia.notifyOwnerAboutApiKey(nazu, numerodono, e.message, command);
-            return reply('🤖 *Sistema de Pinterest temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
-          }
-          await reply("Ocorreu um erro ao processar o Pinterest 💔");
-        }
-        break;
       case 'menu':
       case 'help':
       case 'comandos':
@@ -13846,6 +13644,127 @@ _Assistente: Gemini IA_
         await reply(`❌ Ocorreu um erro ao processar a solicitação de clima via Gemini. Detalhe: ${e.message}. Verifique a sua chave de API.`);
     }
     break;
+case 'anime':
+    try {
+        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
+
+        const commandName = 'anime';
+        const rawBodyWithoutPrefix = body.substring(prefix.length).trim();
+        const parts = rawBodyWithoutPrefix.split(/\s+/);
+
+        if (parts.length <= 1 || parts[0].toLowerCase() !== commandName) {
+             await nazu.sendMessage(from, { react: { text: '🎬', key: info.key } });
+             return reply('🎬 Informe o nome do nome. Exemplo: /anime Ataque dos Titãs');
+        }
+        
+        const nomeAnime = parts.slice(1).join(' ');
+        
+        await reply(`🔍 Buscando informações sobre "${nomeAnime}" no MyAnimeList e traduzindo...`);
+        
+        const apiUrl = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(nomeAnime)}&limit=1`;
+        
+        const response = await axios.get(apiUrl);
+        const data = response.data;
+
+        if (!data || !data.data || data.data.length === 0) {
+            await nazu.sendMessage(from, { react: { text: '❓', key: info.key } });
+            return reply(`❌ Não encontrei nenhum nome com o título "${nomeAnime}".`);
+        }
+        
+        const anime = data.data[0];
+        
+        const titleJapanese = anime.title_japanese || 'N/A';
+        const titleEnglish = anime.title_english || anime.title || 'N/A';
+        let synopsis = anime.synopsis || 'Sinopse indisponível.';
+        
+        const episodes = anime.episodes || 'N/A';
+        const status = anime.status || 'N/A';
+        const premiered = anime.season && anime.year ? `${anime.season} ${anime.year}` : anime.year || 'N/A';
+        const imageUrl = anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || anime.images?.webp?.image_url || anime.images?.jpg?.image_url;
+
+        let synopsisTranslated = synopsis;
+        if (synopsis !== 'Sinopse indisponível.' && anime.synopsis) {
+            
+            const synopsisLimit = 1500; 
+            let conciseSynopsis = anime.synopsis;
+
+            if (anime.synopsis.length > synopsisLimit) {
+                conciseSynopsis = anime.synopsis.substring(0, synopsisLimit);
+                conciseSynopsis += '...';
+            }
+
+            synopsisTranslated = await traduzirTexto(conciseSynopsis, 'en', 'pt');
+        }
+        
+        const translatedStatus = status.replace('Finished Airing', 'Concluído').replace('Currently Airing', 'Em Andamento').replace('Not yet aired', 'Ainda não exibido');
+        const translatedPremiered = premiered.replace('Spring', 'Primavera').replace('Summer', 'Verão').replace('Fall', 'Outono').replace('Winter', 'Inverno').replace('N/A', 'N/A');
+
+        const resultadoFormatado = `
+*🎬 Detalhes do Anime*
+*Título:* ${titleEnglish}
+*Título Japonês:* ${titleJapanese}
+
+*• Episódios:* ${episodes}
+*• Status:* ${translatedStatus}
+*• Estreia:* ${translatedPremiered}
+
+*Sinopse:*
+${synopsisTranslated.trim()}
+
+⊱⋅ ──────────────── ⋅⊰
+_MyAnimeList (👨‍💻 Paulo - Taki 🍥)_`; 
+
+        if (imageUrl) {
+            const imageBuffer = (await axios.get(imageUrl, { responseType: 'arraybuffer' })).data;
+            
+            await nazu.sendMessage(from, {
+                image: imageBuffer,
+                caption: resultadoFormatado.trim(), 
+            }, { quoted: info });
+        } else {
+            await reply(resultadoFormatado.trim());
+        }
+        
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+
+    } catch (e) {
+        let errorMessage = 'Ocorreu um erro desconhecido ao buscar o nome.';
+        if (axios.isAxiosError(e)) {
+            errorMessage = `❌ Erro de API (Jikan/Tradução): Não foi possível buscar/traduzir os dados. Status: ${e.response?.status || 'desconhecido'}.`;
+        }
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        await reply(errorMessage);
+    }
+    break;
+
+async function traduzirTexto(text, sourceLang, targetLang) {
+    try {
+        const url = 'https://translate.googleapis.com/translate_a/single';
+        const params = {
+            client: 'gtx',
+            sl: sourceLang, 
+            tl: targetLang, 
+            dt: 't',
+            q: text 
+        };
+        
+        const response = await axios.get(url, { params });
+        
+        if (response.data && response.data[0]) {
+            let translatedText = '';
+            response.data[0].forEach(item => {
+                if (item[0]) {
+                    translatedText += item[0];
+                }
+            });
+            return translatedText;
+        }
+        return text; 
+    } catch (error) {
+        return text; 
+    }
+}
+ // -----------------------------------------------
     case 'signo':
     try {
         // Acesso seguro à chave (já configurada no package.json/pm2)
@@ -13902,6 +13821,115 @@ _Desenvolvida por: Paulo Hernani (Taki)_`;
         await reply(`❌ Ocorreu um erro ao processar a solicitação do signo via Gemini. Detalhe: ${e.message}`);
     }
     break;
+case 'reviver':
+case 'unban':
+case 'add':
+    try {
+        if (!isGroup) {
+            return reply('Este comando só pode ser usado em grupos. 🚫');
+        }
+
+        const botJidNormalized = nazu.user.id.replace(/:.*|@.*/, '') + '@s.whatsapp.net';
+        const amIAdmin = groupMetadata.participants.find(p => p.id === botJidNormalized)?.admin;
+        
+        if (!amIAdmin && amIAdmin !== 'superadmin') {
+            return reply('Eu preciso ser administrador do grupo para adicionar membros novamente. 🤖');
+        }
+
+        let rawTargetNumber = null;
+        
+        if (q && q.trim()) {
+            const numberFromQuery = q.trim().replace(/[^0-9]/g, '');
+            
+            if (numberFromQuery.length >= 10 && numberFromQuery.length <= 15) { 
+                rawTargetNumber = numberFromQuery;
+            }
+        }
+
+        if (!rawTargetNumber) {
+            return reply(`❌ Por favor, informe o *número de telefone completo* (com código do país e DDD) do membro a ser adicionado. Exemplo: ${prefix}reviver 55389XXXXXXXX`);
+        }
+        
+        const normalizedTargetJid = rawTargetNumber + '@s.whatsapp.net';
+        const targetNumber = rawTargetNumber;
+        let targetName = targetNumber;
+
+        try {
+            const contactInfo = await nazu.getName(normalizedTargetJid); 
+            
+            if (contactInfo && contactInfo.name) {
+                targetName = contactInfo.name;
+            } else if (contactInfo && contactInfo.pushName) {
+                targetName = contactInfo.pushName;
+            }
+            
+        } catch (nameError) {
+            console.warn(`Não foi possível buscar o nome para ${targetNumber}. Usando o número.`);
+        }
+
+        
+        await reply(`⏳ Tentando adicionar ${targetName} de volta ao grupo...`);
+
+        let success = false;
+        let finalMessage = `❌ Não foi possível reviver ${targetName}.`;
+        
+        try {
+            const response = await nazu.groupParticipantsUpdate(
+                from, 
+                [normalizedTargetJid], 
+                'add' 
+            );
+
+            const errorEntry = response.find(p => p.jid === normalizedTargetJid && p.status !== 200);
+
+            if (!errorEntry) {
+                finalMessage = `✅ Membro ${targetName} adicionado de volta com sucesso!`;
+                success = true;
+            } else {
+                if (errorEntry.status === 403) {
+                    finalMessage = `❌ Falha (Status 403 - Proibido): A pessoa pode ter banido o bot ou o grupo.`;
+                } else if (errorEntry.status === 409) {
+                    finalMessage = `ℹ️ O membro ${targetName} já está no grupo.`;
+                } else if (errorEntry.status === 400) {
+                    finalMessage = `❌ Falha (Status 400 - Recusado): O número ${targetName} não pode ser adicionado. (Possível restrição do WhatsApp).`;
+                } else {
+                    finalMessage = `⚠️ Falha (Status ${errorEntry.status}): Não foi possível adicionar. Motivo desconhecido.`;
+                }
+            }
+
+        } catch (e) {
+            console.error('Erro no comando reviver (Catch final):', e);
+            finalMessage = "❌ Ocorreu um erro interno ao tentar reviver o membro.";
+        }
+        
+        await reply(finalMessage);
+
+        const isRestrictedFailure = finalMessage.includes('Recusado') || finalMessage.includes('Proibido');
+        
+        if (!success && isRestrictedFailure) {
+             await reply('⚠️ Devido à falha na adição direta, vou gerar o link de convite para você.');
+             try {
+                const inviteCode = await nazu.groupInviteCode(from);
+                const inviteLink = `https://chat.whatsapp.com/${inviteCode}`;
+                
+                await nazu.sendMessage(sender, {
+                    text: `*🔗 Link de Convite do Grupo ${groupMetadata.subject}*\n\n❌ A adição direta do membro falhou (restrição do WhatsApp).\n\nUse este link para enviar para o membro *${targetName}* manualmente:\n${inviteLink}\n\n_Compartilhe com responsabilidade._`
+                });
+
+                await reply(`✅ Link de convite enviado para o seu chat privado (PV) para que você possa enviar manualmente para ${targetName}.`);
+
+            } catch (linkError) {
+                console.error('Erro ao gerar/enviar link de convite:', linkError);
+                await reply('❌ Falha ao gerar e enviar o link de convite no seu PV. Verifique a permissão do bot.');
+            }
+        }
+
+    } catch (e) {
+        console.error('Erro fatal no comando reviver:', e);
+        await reply("❌ Ocorreu um erro fatal. Verifique se todas as dependências estão corretas.");
+    }
+    break;
+   
       case 'qc': {
   try {
     let texto = q && q.trim()

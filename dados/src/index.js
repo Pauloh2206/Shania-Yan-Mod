@@ -1,3 +1,4 @@
+import Jimp from 'jimp';
 import { downloadYoutubeMp3, getVideoMetadata } from './utils/youtube.js';
 import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
@@ -188,6 +189,7 @@ import {
   JID_LID_CACHE_FILE
 } from './utils/paths.js';
 
+const AVATAR_FALLBACK_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem_up/refs/heads/main/4.png';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathz.dirname(__filename);
 const API_KEY_REQUIRED_MESSAGE = 'Este comando precisa de API key para funcionar. Meu dono já foi notificado! 😺';
@@ -16489,7 +16491,7 @@ Exemplos:
           });
           break;
         }
-      case 'chance':
+      case 'ch':
         try {
           if (!isGroup) return reply("🎮 Ops! Esse comando só funciona em grupos! Chama a galera! 👥�");
           if (!isModoBn) return reply('❌ O modo brincadeira está off nesse grupo! Pede pro admin ativar a diversão! 🎉');
@@ -16945,8 +16947,141 @@ ${tempo.includes('nunca') ? '😂 Brincadeira! Nunca desista dos seus sonhos!' :
         } catch (e) {
           console.error(e);
           await reply("Ocorreu um erro 💔");
-        }
+        }        
         break;
+        
+        case 'chance':
+    try {
+        await nazu.sendMessage(from, { react: { text: '⌛', key: info.key } });
+
+        if (!isGroup) return reply("❌ Este comando só funciona em grupos!");
+        if (!isModoBn) return reply('❌ O modo brincadeira não está ativo nesse grupo.');
+        
+        const mentionedUsers = info.message.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        
+        if (mentionedUsers.length < 2) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply(`🔮 *CHANCE - PREVISÃO* 🔮
+Marque duas pessoas para analisar a previsão!
+Exemplo: ${prefix}chance @fulano @ciclano`);
+        }
+        
+        const pessoa1 = mentionedUsers[0];
+        const pessoa2 = mentionedUsers[1];
+        
+        if (pessoa1 === pessoa2) {
+             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+             return reply('❌ Você precisa marcar duas pessoas diferentes!');
+        }
+
+        const chanceCasamento = Math.floor(Math.random() * 101);
+        const riscoTraicao = Math.floor(Math.random() * 101); 
+        
+        let duracao;
+        const anos = Math.floor(Math.random() * 25);
+        if (anos === 0) {
+            const meses = Math.floor(Math.random() * 11) + 1;
+            duracao = `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+        } else {
+            duracao = `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+        }
+
+        const statusCasamento = chanceCasamento >= 75 ? '💒 Altíssima, preparem o convite!' : 
+                                chanceCasamento >= 50 ? '💍 Chance moderada, depende da DR!' : 
+                                '😅 Baixíssima, casamento só na próxima vida.';
+        
+        const statusTraicao = riscoTraicao <= 20 ? '🛡️ Lealdade máxima!' :
+                              riscoTraicao <= 50 ? '👀 Cuidado com as redes sociais.' :
+                              '🚨 Risco altíssimo, fiquem alertas!';
+                              
+        const emojis = ['🔮', '✨', '🧿', '🍀', '🌟'];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        
+        const nome1 = getUserName(pessoa1);
+        const nome2 = getUserName(pessoa2);
+        
+        let urlFoto1 = await nazu.profilePictureUrl(pessoa1, 'image').catch(() => null);
+        let urlFoto2 = await nazu.profilePictureUrl(pessoa2, 'image').catch(() => null);
+
+        if (!urlFoto1) {
+            urlFoto1 = AVATAR_FALLBACK_URL;
+        }
+        if (!urlFoto2) {
+            urlFoto2 = AVATAR_FALLBACK_URL;
+        }
+        
+        let imageBuffer;
+        
+        if (typeof Jimp !== 'undefined') {
+            imageBuffer = await createFusionImage(urlFoto1, urlFoto2); 
+        }
+
+        const captionMessage = `
+${emoji} *PREVISÃO DO FUTURO* ${emoji}
+----------------------------------
+👥 *Analisando o par:*
+@${nome1} & @${nome2}
+
+📊 *Estatísticas de Relacionamento*
+└─ 💒 Chance de Casar: *${chanceCasamento}%*
+└─ 💔 Risco de Traição: *${riscoTraicao}%*
+└─ ⏳ Duração Estimada: *${duracao}*
+
+*RESUMO:*
+└─ Casamento: ${statusCasamento}
+└─ Traição: ${statusTraicao}
+----------------------------------
+`; 
+        
+        const messageConfig = {
+            caption: captionMessage.trim(),
+            mentions: [pessoa1, pessoa2]
+        };
+
+        if (imageBuffer) {
+            messageConfig.image = imageBuffer;
+        }
+        
+        await nazu.sendMessage(from, messageConfig, { quoted: info });
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+        
+    } catch (e) {
+        console.error(e);
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        await reply("Ocorreu um erro ao consultar a chance 💔");
+    }
+    break;
+
+// -----------------------------------------------------------
+// FUNÇÃO AUXILIAR (Sem a sobreposição do Coração)
+// -----------------------------------------------------------
+async function createFusionImage(url1, url2) {
+    if (typeof Jimp === 'undefined') {
+        return null;
+    }
+
+    try {
+        const size = 200;
+        
+        const foto1 = await Jimp.read(url1).then(img => img.resize(size, size).circle());
+        const foto2 = await Jimp.read(url2).then(img => img.resize(size, size).circle());
+
+        const width = size * 2 + 50;
+        const height = size + 50;
+        
+        const canvas = new Jimp(width, height, 0xFFFFFFFF);
+
+        const margin = 25;
+        canvas.composite(foto1, margin, margin);
+        canvas.composite(foto2, size + margin * 2, margin);        
+        
+        return await canvas.getBufferAsync(Jimp.MIME_PNG);
+
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
+}    
       case 'sn':
         try {
           if (!isGroup) return reply("🎱 Esse comando só funciona em grupos! Chama todo mundo! �✨");

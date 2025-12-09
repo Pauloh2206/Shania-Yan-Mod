@@ -1,6 +1,6 @@
 {
  "name": "Shania-Yan-Bot",
- "version": "12.0.0",
+ "version": "13",
  "description": "Bot de whatsapp modificado por Paulo (criador base hiudy)",
  "type": "module",
  "main": "dados/src/connect.js",

@@ -31,8 +31,8 @@ const print = {
     separator: () => console.log(`${colors.blue}=================================================${colors.reset}`),
     header: () => {
         print.separator();
-        console.log(`${colors.bold}🚀 Configurador Gênesis Nazuna - Versão ${version}${colors.reset}`);
-        console.log(`${colors.bold}👨‍💻 Criado por Hiudy${colors.reset}`);
+        console.log(`${colors.bold}🚀 Configurador Gênesis Shania Yan - Versão ${version}${colors.reset}`);
+        console.log(`${colors.bold}👨‍💻 Editado por Paulo${colors.reset}`);
         print.separator(); console.log();
     }
 };
@@ -210,7 +210,7 @@ async function installNodeDependencies() {
     }
     
     try {
-        await runCommandWithSpinner('npm install --no-optional --force --no-bin-links', 'Executando npm install...');
+        await runCommandWithSpinner('npm install --no-optional --no-bin-links', 'Executando npm install...');
         print.message('✅ Dependências instaladas com sucesso via NPM.');
         return { name: 'Node Dependencies (npm)', status: `${colors.green}✅ Instalado com sucesso${colors.reset}` };
     } catch (npmError) {
@@ -278,7 +278,7 @@ async function main() {
         print.info('📝 Lembre-se de instalar com: npm run config:install');
     }
 
-    print.message(`🎉 Nazuna configurado e pronto para uso! Versão: ${version}`);
+    print.message(`🎉 Shania Yan configurado e pronto para uso! Versão: ${version}`);
 }
 
 main().catch((error) => {

@@ -16948,9 +16948,9 @@ ${tempo.includes('nunca') ? '😂 Brincadeira! Nunca desista dos seus sonhos!' :
           console.error(e);
           await reply("Ocorreu um erro 💔");
         }        
-        break;
-        
-        case 'chance':
+        break;               
+
+case 'chance':
     try {
         await nazu.sendMessage(from, { react: { text: '⌛', key: info.key } });
 
@@ -16963,7 +16963,7 @@ ${tempo.includes('nunca') ? '😂 Brincadeira! Nunca desista dos seus sonhos!' :
             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
             return reply(`🔮 *CHANCE - PREVISÃO* 🔮
 Marque duas pessoas para analisar a previsão!
-Exemplo: ${prefix}chance @fulano @ciclano`);
+Exemplo: ${prefix}chance @Paulo @Shania`);
         }
         
         const pessoa1 = mentionedUsers[0];
@@ -16975,25 +16975,76 @@ Exemplo: ${prefix}chance @fulano @ciclano`);
         }
 
         const chanceCasamento = Math.floor(Math.random() * 101);
-        const riscoTraicao = Math.floor(Math.random() * 101); 
         
+        // Geração de risco de traição individual
+        const riscoTraicao1 = Math.floor(Math.random() * 101);
+        const riscoTraicao2 = Math.floor(Math.random() * 101);
+        
+        // --- LÓGICA DE DURAÇÃO RELACIONADA ÀS ESTATÍSTICAS ---
         let duracao;
-        const anos = Math.floor(Math.random() * 25);
-        if (anos === 0) {
-            const meses = Math.floor(Math.random() * 11) + 1;
-            duracao = `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+        const mediaRiscoTraicao = (riscoTraicao1 + riscoTraicao2) / 2;
+
+        const fatorDuracao = chanceCasamento - mediaRiscoTraicao;
+
+        let anosEstimados;
+        
+        if (fatorDuracao >= 60) {
+            anosEstimados = Math.floor(Math.random() * 15) + 10;
+        } else if (fatorDuracao >= 30) {
+            anosEstimados = Math.floor(Math.random() * 8) + 5;
+        } else if (fatorDuracao >= 0) {
+            anosEstimados = Math.floor(Math.random() * 5) + 1;
+        } else if (fatorDuracao >= -30) {
+            anosEstimados = Math.floor(Math.random() * 3);
         } else {
-            duracao = `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+            anosEstimados = 0;
         }
 
-        const statusCasamento = chanceCasamento >= 75 ? '💒 Altíssima, preparem o convite!' : 
-                                chanceCasamento >= 50 ? '💍 Chance moderada, depende da DR!' : 
-                                '😅 Baixíssima, casamento só na próxima vida.';
+        if (anosEstimados === 0) {
+            const meses = Math.floor(Math.random() * 10) + 1;
+            duracao = `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+        } else if (anosEstimados === 1) {
+            duracao = `${anosEstimados} ano`;
+        } else {
+            duracao = `${anosEstimados} anos`;
+        }
+        // --- FIM DA LÓGICA DE DURAÇÃO ---
+
+
+        let statusCasamento = chanceCasamento >= 85 ? '💖 Aliança garantida! Já podem marcar a data na igreja.' : 
+                                chanceCasamento >= 65 ? '💍 Potencial elevado. Um bom pedido de casamento está a caminho.' : 
+                                chanceCasamento >= 40 ? '⚖️ Neutro. Existe a possibilidade, mas exige muito diálogo e paciência.' : 
+                                '😅 Status de solteiro(a) permanente. Melhor deixar para o próximo ciclo.';
+
+        // LÓGICA DO RESUMO DE TRAIÇÃO (MAIS FRASES E INDIRETA)
+        let statusTraicao;
+
+        if (mediaRiscoTraicao <= 15) {
+            statusTraicao = '🛡️ Fidelidade mútua inabalável. O relacionamento é um castelo de confiança.';
+        } else if (mediaRiscoTraicao <= 40) {
+            // Risco Baixo - 3 opções de frases
+            const frasesBaixas = [
+                '👀 Risco baixo, mas a discrição de um dos lados pode ser questionada em breve.',
+                '👀 Há poucas chances de desvio, mas o oráculo vê fofocas rondando o par.',
+                '👀 O anjo da fidelidade está por perto, mas a atenção é recomendada.',
+            ];
+            statusTraicao = frasesBaixas[Math.floor(Math.random() * frasesBaixas.length)];
+
+        } else if (mediaRiscoTraicao <= 70) {
+            // Risco Médio - 3 opções de frases
+            const frasesMedias = [
+                '⚠️ Atenção: O oráculo detecta uma tentação vinda de fora, mirando uma das partes.',
+                '⚠️ Os astros mostram que a lealdade de um dos envolvidos está em cheque.',
+                '⚠️ O ciclo de infidelidade é alto. É hora de rever os contatinhos passados.',
+            ];
+            statusTraicao = frasesMedias[Math.floor(Math.random() * frasesMedias.length)];
+
+        } else {
+            statusTraicao = '🚨 Alto Perigo de Colapso. Uma pessoa neste par está com a carteirinha de "contatinho" ativa.';
+        }
         
-        const statusTraicao = riscoTraicao <= 20 ? '🛡️ Lealdade máxima!' :
-                              riscoTraicao <= 50 ? '👀 Cuidado com as redes sociais.' :
-                              '🚨 Risco altíssimo, fiquem alertas!';
-                              
+        // FIM DA LÓGICA DO RESUMO DE TRAIÇÃO
+
         const emojis = ['🔮', '✨', '🧿', '🍀', '🌟'];
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
         
@@ -17024,8 +17075,11 @@ ${emoji} *PREVISÃO DO FUTURO* ${emoji}
 
 📊 *Estatísticas de Relacionamento*
 └─ 💒 Chance de Casar: *${chanceCasamento}%*
-└─ 💔 Risco de Traição: *${riscoTraicao}%*
 └─ ⏳ Duração Estimada: *${duracao}*
+
+💔 *RISCO INDIVIDUAL DE TRAIÇÃO*
+└─ @${nome1}: *${riscoTraicao1}%*
+└─ @${nome2}: *${riscoTraicao2}%*
 
 *RESUMO:*
 └─ Casamento: ${statusCasamento}
@@ -17053,35 +17107,40 @@ ${emoji} *PREVISÃO DO FUTURO* ${emoji}
     break;
 
 // -----------------------------------------------------------
-// FUNÇÃO AUXILIAR (Sem a sobreposição do Coração)
-// -----------------------------------------------------------
 async function createFusionImage(url1, url2) {
     if (typeof Jimp === 'undefined') {
         return null;
     }
 
     try {
-        const size = 200;
-        
+        const size = 200; // Tamanho das fotos
+        const spacing = 20; // Espaço entre as duas fotos
+        const margin = 35; // Margem lateral/vertical uniforme
+
         const foto1 = await Jimp.read(url1).then(img => img.resize(size, size).circle());
         const foto2 = await Jimp.read(url2).then(img => img.resize(size, size).circle());
 
-        const width = size * 2 + 50;
-        const height = size + 50;
-        
-        const canvas = new Jimp(width, height, 0xFFFFFFFF);
+        const contentWidth = (size * 2) + spacing;
+        const totalWidth = contentWidth + (margin * 2); 
+        const totalHeight = size + (margin * 2); 
+       
+        const canvas = new Jimp(totalWidth, totalHeight, 0xFFFACDFF);
 
-        const margin = 25;
-        canvas.composite(foto1, margin, margin);
-        canvas.composite(foto2, size + margin * 2, margin);        
+        const foto1X = margin;
+        const foto1Y = margin;
+        canvas.composite(foto1, foto1X, foto1Y);
+
+        const foto2X = margin + size + spacing;
+        const foto2Y = margin;
+        canvas.composite(foto2, foto2X, foto2Y);
         
         return await canvas.getBufferAsync(Jimp.MIME_PNG);
 
     } catch (e) {
-        console.error(e);
+        console.error("Erro ao criar imagem de fusão:", e);
         return null;
     }
-}    
+}
       case 'sn':
         try {
           if (!isGroup) return reply("🎱 Esse comando só funciona em grupos! Chama todo mundo! �✨");

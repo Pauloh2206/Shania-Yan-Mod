@@ -189,6 +189,42 @@ import {
   JID_LID_CACHE_FILE
 } from './utils/paths.js';
 
+// ===============================================
+// FUNÇÕES AUXILIARES NO ESCOPO GLOBAL
+// ===============================================
+
+// 1. getBotJID (Necessária para checkBotAdmin e case 'carta')
+function getBotJID(client) { 
+    return client.user.id.split(':')[0] + '@s.whatsapp.net';
+}
+
+// 2. toJid (Com a correção para aceitar vários formatos de número)
+function toJid(number) {
+    if (!number) return null;
+    const cleanedId = number.replace(/[^0-9@.]/g, ''); 
+    if (cleanedId.includes('@')) {
+        return cleanedId; 
+    }
+    return `${cleanedId}@s.whatsapp.net`; 
+}
+
+// 3. checkBotAdmin (Necessária para case 'fuidevasco' e usa getBotJID)
+async function checkBotAdmin(nazu, groupId) {
+    try {
+        const botJID = getBotJID(nazu); 
+        
+        const metadata = await nazu.groupMetadata(groupId);
+        const botParticipant = metadata.participants.find(p => p.id === botJID);
+        
+        return botParticipant && botParticipant.admin === 'admin'; 
+        
+    } catch (e) {
+        console.error(`Falha ao verificar status de admin no grupo ${groupId}:`, e.message);
+        return false;
+    }
+}
+// ===============================================
+
 const AVATAR_FALLBACK_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem_up/refs/heads/main/4.png';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathz.dirname(__filename);
@@ -13930,8 +13966,93 @@ case 'add':
         console.error('Erro fatal no comando reviver:', e);
         await reply("❌ Ocorreu um erro fatal. Verifique se todas as dependências estão corretas.");
     }
+    break;  
+
+case 'carta':
+    try {
+        await nazu.sendMessage(from, { react: { text: '✍️', key: info.key } });
+
+        const botJID = getBotJID(nazu); 
+
+        const args = body.slice(prefix.length + command.length).trim().split(/\s+/);
+        
+        let idDestinoBruto = args[0];
+        if (!idDestinoBruto) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply(`❌ Por favor, forneça o ID de destino (número ou JID de grupo) e a mensagem.`);
+        }
+
+        // 1. Limpa o número bruto (remove +,-, espaços) para CONTAR os dígitos.
+        const cleanedNumberForCheck = idDestinoBruto.replace(/[^0-9@.]/g, ''); 
+        
+        // --- NOVA LÓGICA RÍGIDA DE VALIDAÇÃO DE NÚMERO BRASILEIRO ---
+        
+        // Se o input não for um JID de grupo (@g.us), aplica a validação de formato de número:
+        if (!cleanedNumberForCheck.includes('@g.us')) {
+            
+            // Números de celular brasileiros devem ter 13 dígitos (55 + 2 DDD + 9 + 8 dígitos).
+            // A API do WhatsApp frequentemente rejeita/trava com 12 dígitos.
+            if (!cleanedNumberForCheck.startsWith('55') || cleanedNumberForCheck.length !== 13) {
+                
+                // Mensagem de Erro Específica
+                await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+                return reply(`❌ Formato de número inválido. O número deve ter 13 dígitos e começar com 55 (DDD).
+Exemplo: ${prefix}carta 5516981532586 Oii, Paulo!
+(Se for enviar para um grupo, use o JID completo: 120300...g.us)`);
+            }
+        }
+        // --- FIM DA NOVA LÓGICA ---
+        
+        // Continua com o processamento normal, agora o número é garantidamente limpo e válido.
+        const destinatarioJID = toJid(idDestinoBruto); 
+        const mensagemBruta = args.slice(1).join(' ').trim();
+        
+        if (!mensagemBruta) {
+             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+             return reply('❌ Você precisa escrever o conteúdo da carta anônima.');
+        }
+
+        if (destinatarioJID === botJID) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply('❌ Não posso enviar uma carta anônima para mim mesmo!');
+        }
+        
+        let nomeDestinatario;
+        let tipoDestino;
+
+        if (destinatarioJID.endsWith('@g.us')) {
+            const groupMetadata = await nazu.groupMetadata(destinatarioJID).catch(() => null);
+            nomeDestinatario = groupMetadata?.subject || destinatarioJID.split('@')[0];
+            tipoDestino = "Grupo";
+        } else {
+            nomeDestinatario = getUserName(destinatarioJID); 
+            tipoDestino = "PV";
+        }
+
+        const mensagemAnonima = `
+💌 *CARTA ANÔNIMA* 💌
+----------------------------------
+${mensagemBruta}
+----------------------------------
+*Remetente:* 🤫 Anônimo(a)
+*Nota:* Esta mensagem foi enviada a pedido de um usuário.
+        `.trim();
+        
+        await nazu.sendMessage(destinatarioJID, { 
+            text: mensagemAnonima, 
+        });
+
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+        await reply(`✅ Carta anônima enviada com sucesso para ${nomeDestinatario} (${tipoDestino})!`);
+
+    } catch (e) {
+        // O try/catch garante que, mesmo se o erro for assíncrono, o bot tente se recuperar
+        console.error("ERRO CRÍTICO NA CARTA:", e.message, e.stack); 
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        await reply("❌ Ocorreu um erro interno. Verifique o console.");
+    }
     break;
-   
+
       case 'qc': {
   try {
     let texto = q && q.trim()

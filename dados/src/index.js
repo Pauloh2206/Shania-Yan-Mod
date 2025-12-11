@@ -1,3 +1,6 @@
+import { 
+    downloadYoutubeMp4_480p 
+} from './utils/youtubeVideo.js';
 import Jimp from 'jimp';
 import { downloadYoutubeMp3, getVideoMetadata } from './utils/youtube.js';
 import 'dotenv/config';
@@ -11089,6 +11092,94 @@ Exemplo: ${prefix}tradutor espanhol | Olá mundo! ✨`);
           }
         }
         break;
+        
+        case 'ytmp4':
+case 'playvid':
+    let videoFilePath = null;
+    
+    // 1. Validação de Permissões
+    if (!isOwner) {
+         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+         return reply("_Apenas meu dono e subs tem permissão para usar essa função_ 🍥");
+    }
+
+    try {
+        await nazu.sendMessage(from, { react: { text: '🎬', key: info.key } });
+
+        if (!q) {
+            await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
+            return reply(`🎬 *DOWNLOAD DE VÍDEO (480P)* 🎬\n\n📝 Digite o nome do vídeo ou link do YouTube.\n\n*Exemplo:* ${prefix}ytmp4 trailer novo`);
+        }
+        
+        const query = q.substring(0, 150);
+        await reply(`🔍 _Buscando metadados de_ *"${query}"*...`);
+        const videoInfo = await getVideoMetadata(query);
+
+        // 2. Validação de Duração (Limite sugerido: 5 minutos / 300 segundos)
+        if (videoInfo.seconds > 300) { 
+            await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
+            return reply(`⚠️ Este vídeo é muito longo (${videoInfo.duration}).\nPor favor, escolha um vídeo com menos de 5 minutos (300 segundos) para evitar falhas no envio.`);
+        }
+
+        // 3. Enviar Informações
+        const caption = `
+🎥 *Vídeo Encontrado (Máximo 480p)* 🎥
+
+📌 *Título:* ${videoInfo.title}
+👤 *Canal:* ${videoInfo.author}
+⏱ *Duração:* ${videoInfo.duration}
+🔗 *Link:* ${videoInfo.url}
+
+📥 _*Baixando vídeo em 480p, aguarde...*_`;
+        
+        await nazu.sendMessage(from, {
+            image: { url: videoInfo.thumbnail },
+            caption: caption.trim(),
+            footer: `${nomebot} • Versão ${botVersion}`
+        }, { quoted: info });
+        
+        await nazu.sendMessage(from, { react: { text: '⬇️', key: info.key } });
+
+        // 4. DOWNLOAD E ENVIO (Usando a função de 480p)
+        videoFilePath = await downloadYoutubeMp4_480p(videoInfo.id, videoInfo.title); 
+
+        if (videoFilePath) {
+            await nazu.sendMessage(from, { 
+                video: { url: videoFilePath }, 
+                mimetype: 'video/mp4',
+                caption: `Aqui está o vídeo em 480p: ${videoInfo.title}`,
+            }, { quoted: info });
+            
+            await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+        } else {
+             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+             reply(`❌ Falha no download do vídeo.`);
+        }
+        
+    } catch (error) {
+        console.error('Erro no comando ytmp4/video:', error);
+        
+        // Tratamento de erro yt-dlp
+        if (String(error.message).includes('yt-dlp')) {
+             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+             return reply("❌ Ferramenta *'yt-dlp'* não encontrada. Instale no Termux.");
+        }
+        
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        reply(`❌ Falha ao processar o vídeo: ${error.message.substring(0, 100)}...`);
+        
+    } finally {
+        // --- LIMPEZA ---
+        if (videoFilePath && fs.existsSync(videoFilePath)) {
+            try {
+                 fs.unlinkSync(videoFilePath);
+            } catch (cleanupError) {
+                 console.error('Erro ao limpar arquivo temporário:', cleanupError);
+            }
+        }
+    }
+    break;
+        
 case 'play':
 case 'ytmp3':
 case 'musica':

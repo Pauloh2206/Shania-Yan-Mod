@@ -11192,7 +11192,7 @@ case 'ownermenu':
         break;
       case 'seradm':
         try {
-          if (!isOwner) return reply("Este comando é apenas para o meu dono");
+          if (!isOwner && !isSubOwner) return reply("Este comando é apenas para o meu dono");
           await nazu.groupParticipantsUpdate(from, [sender], "promote");
         } catch (e) {
           console.error(e);
@@ -12295,6 +12295,48 @@ case 'revelar':
           await reply("❌ Ocorreu um erro ao limpar ranks de todos os grupos. Tente novamente mais tarde.");
         }
         break;
+        
+        case 'cleanuserrank':
+case 'rankuserclean':
+    try {
+        if (!isGroup) return reply("🚫 Este comando só pode ser usado em grupos.");
+        if (!isOwner && !isSubOwner) return reply("🚫 Apenas o Dono pode utilizar este comando.");
+
+        // 1. Identifica o JID do usuário alvo (via menção)
+        let mentionedJid = info.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        
+        if (!mentionedJid) {
+            return reply("❌ Por favor, mencione o usuário cujo rank você deseja limpar.");
+        }
+
+        // 2. Busca e remove (ou zera) o usuário do contador
+        let userIndex = groupData.contador.findIndex(user => user.id === mentionedJid);
+
+        if (userIndex === -1) {
+            return reply(`⚠️ O usuário mencionado (@${getUserName(mentionedJid)}) não possui dados de rank neste grupo.`);
+        }
+        
+        const userName = getUserName(mentionedJid);
+        
+        // Remove o objeto do usuário do array 'contador'
+        groupData.contador.splice(userIndex, 1); 
+        
+        // 3. Salva os dados atualizados no arquivo JSON do grupo
+        fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+
+        await nazu.sendMessage(from, {
+            text: `✅ Rank de atividade de @${userName} foi *limpo* (resetado) com sucesso neste grupo.`,
+            mentions: [mentionedJid]
+        }, {
+            quoted: info
+        });
+
+    } catch (e) {
+        console.error('[CLEANUSERRANK] Erro:', e);
+        await reply("❌ Ocorreu um erro interno ao limpar o rank do usuário.");
+    }
+    break;    
+        
       case 'rankativos':
       case 'rankativo':
         try {

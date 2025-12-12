@@ -8086,16 +8086,21 @@ Entre em contato com o dono do bot:
         try {
           if (!isOwner || isOwner && isSubOwner) return reply("🚫 Apenas o Dono principal pode utilizar esse comando!");
           if (!fs.existsSync(pathz.join(__dirname, '..', 'database', 'updateSave.json'))) return reply('❌ Sua versão não tem suporte a esse sistema ainda.');
-          const AtualCom = await axios.get('https://api.github.com/repos/hiudyy/nazuna/commits?per_page=1', {
+          
+          // 1. MUDANÇA AQUI: Busca o último commit do seu novo repositório
+          const AtualCom = await axios.get('https://api.github.com/repos/Pauloh2206/Shania-Yan-Mod/commits?per_page=1', {
             headers: {
               Accept: 'application/vnd.github+json'
             }
           }).then(r => r.headers.link?.match(/page=(\d+)>;\s*rel="last"/)?.[1]);
+          
           const {
             total
           } = JSON.parse(fs.readFileSync(pathz.join(__dirname, '..', 'database', 'updateSave.json'), 'utf-8'));
+          
           if (AtualCom > total) {
-            const TextZin = await VerifyUpdate('hiudyy/nazuna', AtualCom - total);
+            // 2. MUDANÇA AQUI: Passa o nome do seu novo repositório para a função VerifyUpdate
+            const TextZin = await VerifyUpdate('Pauloh2206/Shania-Yan-Mod', AtualCom - total);
             await reply(TextZin);
           } else {
             await reply('Você ja esta utilizando a versão mais recente da bot.');
@@ -8104,6 +8109,7 @@ Entre em contato com o dono do bot:
           console.error(e);
         }
         break;
+
       case 'addsubdono':
         if (!isOwner && !isSubOwner) return reply("🚫 Apenas o Dono principal pode adicionar subdonos!");
         if (isSubOwner && !isOwner) return reply("🚫 Subdonos não podem adicionar outros subdonos!");

@@ -8084,7 +8084,7 @@ Entre em contato com o dono do bot:
         break;     
       case 'updates':
         try {
-          if (!isOwner || isOwner && isSubOwner) return reply("🚫 Apenas o Dono principal pode utilizar esse comando!");
+          if (!isOwner) return reply("🚫 Apenas o Dono principal pode utilizar esse comando!");
           if (!fs.existsSync(pathz.join(__dirname, '..', 'database', 'updateSave.json'))) return reply('❌ Sua versão não tem suporte a esse sistema ainda.');
           
           // 1. MUDANÇA AQUI: Busca o último commit do seu novo repositório

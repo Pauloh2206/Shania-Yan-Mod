@@ -39,63 +39,21 @@ async function loadModules() {
     modulesPromise = (async () => {
         const modules = {};
 
-        // --- downloads (ESM via dynamic import) ---
+        // --- downloads (MANTENDO APENAS LYRICS) ---
         const [
-            youtubeMod,
-            tiktokMod,
-            pinterestMod,
-            igdlMod,
             lyricsMod,
-            mcpluginsMod,
-            filmesMod,
         ] = await Promise.all([
-            import('./downloads/youtube.js'),
-            import('./downloads/tiktok.js'),
-            import('./downloads/pinterest.js'),
-            import('./downloads/igdl.js'),
-            import('./downloads/lyrics.js'),
-            import('./downloads/mcplugins.js'),
-            import('./downloads/filmes.js'),
+            import('./utils/lyrics.js'), // <-- CORREÇÃO: Caminho relativo resolvido
         ]);
 
         // Download modules with null checking
-        modules.youtube = youtubeMod.default ?? youtubeMod;
-        if (modules.youtube && typeof modules.youtube.search !== 'function') {
-            console.warn('[EXPORTS] YouTube search function not found, adding fallback');
-            modules.youtube.search = () => { throw new Error('YouTube search not available'); };
-        }
-
-        modules.tiktok = tiktokMod.default ?? tiktokMod;
-        if (modules.tiktok && typeof modules.tiktok.dl !== 'function') {
-            console.warn('[EXPORTS] TikTok dl function not found');
-        }
-
-        modules.pinterest = pinterestMod.default ?? pinterestMod;
-        if (modules.pinterest && typeof modules.pinterest.dl !== 'function') {
-            console.warn('[EXPORTS] Pinterest dl function not found');
-        }
-
-        modules.igdl = igdlMod.default ?? igdlMod;
-        modules.Lyrics = lyricsMod.default ?? lyricsMod;
-        modules.mcPlugin = mcpluginsMod.default ?? mcpluginsMod;
-        modules.FilmesDL = filmesMod.default ?? filmesMod;
         
-        // Enhanced null checking and error handling for all modules
-        if (modules.youtube) {
-            // Ensure critical methods exist
-            const youtubeMethods = ['search', 'mp3', 'mp4'];
-            youtubeMethods.forEach(method => {
-                if (typeof modules.youtube[method] !== 'function') {
-                    console.warn(`[EXPORTS] YouTube.${method} not available, adding fallback`);
-                    modules.youtube[method] = (...args) => {
-                        throw new Error(`YouTube ${method} function not available`);
-                    };
-                }
-            });
-        } else {
-            console.warn('[EXPORTS] YouTube module not loaded');
+        modules.Lyrics = lyricsMod.default ?? lyricsMod; 
+        if (modules.Lyrics && typeof modules.Lyrics.search !== 'function') {
+             console.warn('[EXPORTS] Lyrics search function not found, adding fallback');
+             modules.Lyrics.search = () => { throw new Error('Lyrics search not available'); };
         }
-
+        
         // --- utils (ESM via dynamic import) ---
         const [
             styleTextMod,
@@ -201,9 +159,6 @@ export async function getModules() {
 
 /**
  * Default export resolves the aggregated modules object via top-level await.
- * This keeps existing ESM consumers using:
- *   const modules = (await import('./funcs/exports.js')).default;
- * working as expected.
  */
 const modules = await loadModules();
 

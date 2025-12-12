@@ -11100,7 +11100,7 @@ case 'playvid':
     // 1. Validação de Permissões
     if (!isOwner) {
          await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-         return reply("_Apenas meu dono e subs tem permissão para usar essa função_ 🍥");
+         return reply("_Apenas meu dono tem permissão para usar essa função_ 🍥");
     }
 
     try {
@@ -11108,7 +11108,7 @@ case 'playvid':
 
         if (!q) {
             await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
-            return reply(`🎬 *DOWNLOAD DE VÍDEO (480P)* 🎬\n\n📝 Digite o nome do vídeo ou link do YouTube.\n\n*Exemplo:* ${prefix}ytmp4 trailer novo`);
+            return reply(`🎬 *DOWNLOAD DE VÍDEO* 🎬\n\n📝 Digite o nome do vídeo ou link do YouTube.\n\n*Exemplo:* ${prefix}ytmp4 trailer novo`);
         }
         
         const query = q.substring(0, 150);
@@ -11123,14 +11123,15 @@ case 'playvid':
 
         // 3. Enviar Informações
         const caption = `
-🎥 *Vídeo Encontrado (Máximo 480p)* 🎥
+🎥 *Vídeo Encontrado (baixando)* 🎥
 
+👨‍💻 *Dev:* wa.me/5516981532586
 📌 *Título:* ${videoInfo.title}
 👤 *Canal:* ${videoInfo.author}
 ⏱ *Duração:* ${videoInfo.duration}
 🔗 *Link:* ${videoInfo.url}
 
-📥 _*Baixando vídeo em 480p, aguarde...*_`;
+📥 _*Baixando vídeo, aguarde...*_`;
         
         await nazu.sendMessage(from, {
             image: { url: videoInfo.thumbnail },
@@ -11147,7 +11148,7 @@ case 'playvid':
             await nazu.sendMessage(from, { 
                 video: { url: videoFilePath }, 
                 mimetype: 'video/mp4',
-                caption: `Aqui está o vídeo em 480p: ${videoInfo.title}`,
+                caption: `Aqui está o vídeo: ${videoInfo.title}`,
             }, { quoted: info });
             
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
@@ -12687,48 +12688,69 @@ ${prefix}togglecmdvip premium_ia off`);
       
       //COMANDOS GERAIS
       case 'rvisu':
-      case 'open':
-      case 'revelar':
-        try {
-          var RSMM = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-          var boij22 = RSMM?.imageMessage || info.message?.imageMessage || RSMM?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessage?.message?.imageMessage || RSMM?.viewOnceMessage?.message?.imageMessage;
-          var boijj = RSMM?.videoMessage || info.message?.videoMessage || RSMM?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessage?.message?.videoMessage || RSMM?.viewOnceMessage?.message?.videoMessage;
-          var boij33 = RSMM?.audioMessage || info.message?.audioMessage || RSMM?.viewOnceMessageV2?.message?.audioMessage || info.message?.viewOnceMessageV2?.message?.audioMessage || info.message?.viewOnceMessage?.message?.audioMessage || RSMM?.viewOnceMessage?.message?.audioMessage;
-          if (boijj) {
+case 'open':
+case 'revelar':
+    try {
+        // --- ADIÇÃO: Reação no Início (Feedback Imediato) ---
+        await nazu.sendMessage(from, { react: { text: '👀', key: info.key } });
+        // -----------------------------------------------------
+
+        var RSMM = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        var boij22 = RSMM?.imageMessage || info.message?.imageMessage || RSMM?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessage?.message?.imageMessage || RSMM?.viewOnceMessage?.message?.imageMessage;
+        var boijj = RSMM?.videoMessage || info.message?.videoMessage || RSMM?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessage?.message?.videoMessage || RSMM?.viewOnceMessage?.message?.videoMessage;
+        var boij33 = RSMM?.audioMessage || info.message?.audioMessage || RSMM?.viewOnceMessageV2?.message?.audioMessage || info.message?.viewOnceMessageV2?.message?.audioMessage || info.message?.viewOnceMessage?.message?.audioMessage || RSMM?.viewOnceMessage?.message?.audioMessage;
+        
+        let success = false; // Flag para rastrear se alguma mídia foi revelada
+        
+        if (boijj) {
             var px = boijj;
             px.viewOnce = false;
             px.video = {
-              url: px.url
+                url: px.url
             };
             await nazu.sendMessage(from, px, {
-              quoted: info
+                quoted: info
             });
-          } else if (boij22) {
+            success = true;
+        } else if (boij22) {
             var px = boij22;
             px.viewOnce = false;
             px.image = {
-              url: px.url
+                url: px.url
             };
             await nazu.sendMessage(from, px, {
-              quoted: info
+                quoted: info
             });
-          } else if (boij33) {
+            success = true;
+        } else if (boij33) {
             var px = boij33;
             px.viewOnce = false;
             px.audio = {
-              url: px.url
+                url: px.url
             };
             await nazu.sendMessage(from, px, {
-              quoted: info
+                quoted: info
             });
-          } else {
+            success = true;
+        } else {
+            // Se nenhuma mídia foi encontrada, reage com ❌ e envia a mensagem de erro.
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
             return reply('Por favor, *mencione uma imagem, video ou áudio em visualização única* para executar o comando.');
-          }
-        } catch (e) {
-          console.error(e);
-          await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
-        break;
+
+        // --- ADIÇÃO: Reação de Sucesso (Se a mídia foi enviada) ---
+        if (success) {
+            await nazu.sendMessage(from, { react: { text: '👀', key: info.key } });
+        }
+        // -----------------------------------------------------------
+
+    } catch (e) {
+        console.error(e);
+        // Em caso de erro interno, remove a reação 👀 e coloca o ❌
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
+    }
+    break;
       case 'limpardb':
         try {
           if (!isOwner) return reply("Apenas o dono pode limpar o banco de dados.");
@@ -13997,10 +14019,10 @@ case 'add':
         }
 
         
-        await reply(`⏳ Tentando adicionar ${targetName} de volta ao grupo...`);
+        await reply(`⏳ Tentando adicionar ${targetName} ao grupo...`);
 
         let success = false;
-        let finalMessage = `❌ Não foi possível reviver ${targetName}.`;
+        let finalMessage = `❌ Não foi possível adicionar ${targetName}.`;
         
         try {
             const response = await nazu.groupParticipantsUpdate(
@@ -14070,7 +14092,7 @@ case 'carta':
         let idDestinoBruto = args[0];
         if (!idDestinoBruto) {
             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-            return reply(`❌ Por favor, forneça o ID de destino (número ou JID de grupo) e a mensagem.`);
+            return reply(`❌ Por favor, forneça o número de destino (número ) e a mensagem.`);
         }
 
         // 1. Limpa o número bruto (remove +,-, espaços) para CONTAR os dígitos.

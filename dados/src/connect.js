@@ -21,6 +21,11 @@ import { buildUserId } from './utils/helpers.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// >> NOVO: Caminho para o arquivo de mídia de boas-vindas do bot e do grupo <<
+// O bot tentará enviar este arquivo como boas-vindas se ele existir.
+// Corrigido o nome da pasta de 'media' para 'midias'
+const WELCOME_MEDIA_PATH = path.join(__dirname, '..', 'midias', 'welcome_bot.gif'); 
+
 // Cache para versão do Baileys
 let baileysVersionCache = null;
 let baileysVersionCacheTime = 0;
@@ -454,6 +459,7 @@ function formatMessageText(template, replacements) {
     return text;
 }
 
+// === FUNÇÃO createGroupMessage MODIFICADA COM LÓGICA DE MP4/GIF E DEBUG ===
 async function createGroupMessage(NazunaSock, groupMetadata, participants, settings, isWelcome = true) {
     const jsonGp = await loadGroupSettings(groupMetadata.id);
     const mentions = participants.map(p => p);
@@ -468,6 +474,45 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
         (jsonGp.textbv ? jsonGp.textbv : "╭━━━⊱ 🌟 *BEM-VINDO(A/S)!* 🌟 ⊱━━━╮\n│\n│ 👤 #numerodele#\n│\n│ 🏠 Grupo: *#nomedogp#*\n│ 👥 Membros: *#membros#*\n│\n╰━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n✨ *Seja bem-vindo(a/s) ao grupo!* ✨") :
         (jsonGp.exit.text ? jsonGp.exit.text : "╭━━━⊱ 👋 *ATÉ LOGO!* 👋 ⊱━━━╮\n│\n│ 👤 #numerodele#\n│\n│ 🚪 Saiu do grupo\n│ *#nomedogp#*\n│\n╰━━━━━━━━━━━━━━━━━━━━━━╯\n\n💫 *Até a próxima!* 💫");
     const text = formatMessageText(settings.text || defaultText, replacements);
+
+    // --- INÍCIO DA LÓGICA DE ENVIO DE MP4/GIF PARA GRUPO ---
+    if (isWelcome) {
+        console.log(`[DEBUG] Tentando enviar mídia de boas-vindas para o grupo: ${groupMetadata.id}`);
+        try {
+            const mediaPath = WELCOME_MEDIA_PATH;
+            console.log(`[DEBUG] Caminho do arquivo configurado: ${mediaPath}`);
+            
+            // Tenta acessar o arquivo de mídia
+            await fs.access(mediaPath); 
+            console.log(`[DEBUG] Arquivo encontrado com sucesso: ${path.basename(mediaPath)}`);
+
+            const mediaBuffer = await fs.readFile(mediaPath);
+            const ext = path.extname(mediaPath).toLowerCase();
+            const isGif = ext === '.gif';
+            const isMp4 = ext === '.mp4';
+            
+            if (isMp4 || isGif) {
+                console.log(`[DEBUG] Tipo de arquivo: ${isGif ? 'GIF' : 'MP4'}. Montando payload de mídia.`);
+                // Retorna payload de vídeo/gif com a legenda (caption)
+                return {
+                    video: mediaBuffer,
+                    caption: text, // O texto de boas-vindas (com menções) será a legenda
+                    mimetype: 'video/mp4', 
+                    gifPlayback: isGif,
+                    mentions // As menções são incluídas na legenda
+                };
+            } else {
+                console.warn(`[DEBUG] O arquivo existe, mas não é MP4 ou GIF (${ext}). Enviando apenas texto.`);
+            }
+
+        } catch (mediaError) {
+            // Se o arquivo não existe (ENOENT) ou não pode ser lido (EACCES), reverte para texto
+            console.error(`[DEBUG] FALHA ao acessar/enviar o arquivo de mídia de boas-vindas do grupo. Revertendo para texto. Erro: ${mediaError.code || mediaError.message}`);
+        }
+    }
+    // --- FIM DA LÓGICA DE ENVIO DE MP4/GIF PARA GRUPO ---
+
+    // Mensagem padrão (texto ou imagem se houver URL)
     const message = {
         text,
         mentions
@@ -490,6 +535,7 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
     }
     return message;
 }
+// === FIM DA FUNÇÃO createGroupMessage MODIFICADA ===
 
 async function handleGroupParticipantsUpdate(NazunaSock, inf) {
     try {
@@ -1145,10 +1191,42 @@ async function createBotSocket(authDir) {
                         setTimeout(async () => {
                             try {
                                 const ownerJid = buildUserId(numerodono, config);
-                                await NazunaSock.sendMessage(ownerJid, { 
-                                    text: msgBotOnConfig.message 
-                                });
-                                console.log('✅ Mensagem de inicialização enviada para o dono');
+                                const mediaPath = WELCOME_MEDIA_PATH;
+                                
+                                let messagePayload = {
+                                    text: msgBotOnConfig.message // Default: text message
+                                };
+
+                                // ↓↓↓↓↓ INÍCIO DA LÓGICA DE ENVIO DE GIF/MP4 INSERIDA ↓↓↓↓↓
+                                try {
+                                    // Tenta acessar o arquivo de mídia
+                                    await fs.access(mediaPath); 
+                                    const mediaBuffer = await fs.readFile(mediaPath);
+                                    const ext = path.extname(mediaPath).toLowerCase();
+                                    const isGif = ext === '.gif';
+                                    const isMp4 = ext === '.mp4';
+
+                                    if (isMp4 || isGif) {
+                                        messagePayload = {
+                                            video: mediaBuffer,
+                                            caption: msgBotOnConfig.message,
+                                            // Usar 'video/mp4' para ambos é padrão no Baileys, com gifPlayback para GIFs
+                                            mimetype: 'video/mp4', 
+                                            gifPlayback: isGif 
+                                        };
+                                        console.log(`ℹ️ Preparando para enviar mídia de boas-vindas: ${isGif ? 'GIF' : 'MP4'} (Caminho: ${mediaPath})`);
+                                    } else {
+                                        console.warn(`⚠️ O arquivo de boas-vindas existe, mas não é MP4 ou GIF (${ext}). Enviando apenas texto.`);
+                                    }
+
+                                } catch (mediaError) {
+                                    // Pega erro de fs.access (arquivo não existe) ou fs.readFile
+                                    console.warn(`⚠️ Arquivo de mídia de boas-vindas não encontrado ou inacessível em ${mediaPath}. Enviando apenas texto. Erro: ${mediaError.code || mediaError.message}`);
+                                }
+                                // ↑↑↑↑↑ FIM DA LÓGICA DE ENVIO DE GIF/MP4 INSERIDA ↑↑↑↑↑
+                                
+                                await NazunaSock.sendMessage(ownerJid, messagePayload);
+                                console.log(`✅ Mensagem de inicialização ${messagePayload.video ? 'com mídia' : ''} enviada para o dono`);
                             } catch (sendError) {
                                 console.error('❌ Erro ao enviar mensagem de inicialização:', sendError.message);
                             }

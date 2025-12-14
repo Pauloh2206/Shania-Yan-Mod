@@ -19,44 +19,13 @@ ${formattedHeader}
 
 ${menuTopBorder}${separatorIcon} *${searchMenuTitle}*
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}google
-${middleBorder}${menuItemIcon}${prefix}noticias
-${middleBorder}${menuItemIcon}${prefix}apps
-${middleBorder}${menuItemIcon}${prefix}dicionario
-${middleBorder}${menuItemIcon}${prefix}wikipedia
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${audioMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}letra
-${middleBorder}${menuItemIcon}${prefix}play
-${middleBorder}${menuItemIcon}${prefix}shazam
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${videoMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}playvid
-${middleBorder}${menuItemIcon}${prefix}assistir
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${downloadMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}tiktok
-${middleBorder}${menuItemIcon}${prefix}instagram
-${middleBorder}${menuItemIcon}${prefix}igstory
-${middleBorder}${menuItemIcon}${prefix}gdrive
-${middleBorder}${menuItemIcon}${prefix}mediafire
-${middleBorder}${menuItemIcon}${prefix}twitter
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${mediaMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}pinterest
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${gamesMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}mcplugin
+	${middleBorder}${menuItemIcon}${prefix}letra
+	${middleBorder}${menuItemIcon}${prefix}lyrics
+	${middleBorder}${menuItemIcon}${prefix}musica
+	${middleBorder}${menuItemIcon}${prefix}play
+	${middleBorder}${menuItemIcon}${prefix}playvid
+	${middleBorder}${menuItemIcon}${prefix}ytmp3
+	${middleBorder}${menuItemIcon}${prefix}ytmp4
 ${bottomBorder}
 `;
 }

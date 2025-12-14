@@ -778,6 +778,32 @@ const removeSubdono = async (userId, nazu = null) => {
   }
 };
 
+// ----------------------------------------------------
+// NOVO CÓDIGO INSERIDO AQUI: removeAllSubdonos
+// ----------------------------------------------------
+const removeAllSubdonos = async (nazu) => {
+    const subdonos = loadSubdonos();
+    
+    if (subdonos.length === 0) {
+        return { success: false, message: "⚠️ Não há subdonos para remover." };
+    }
+    
+    // Zera o array de subdonos e salva
+    const emptySubdonos = [];
+    if (saveSubdonos(emptySubdonos)) {
+        return { 
+            success: true, 
+            message: `✅ Todos os ${subdonos.length} subdonos foram removidos com sucesso! A lista agora está vazia.` 
+        };
+    } else {
+        return {
+            success: false,
+            message: '❌ Erro ao salvar a lista vazia de subdonos. Tente novamente.'
+        };
+    }
+};
+// ----------------------------------------------------
+
 const getSubdonos = () => {
   return [...loadSubdonos()];
 };
@@ -2312,6 +2338,7 @@ export {
   addSubdono,
   removeSubdono,
   getSubdonos,
+  removeAllSubdonos, // <--- EXPORTAÇÃO DA NOVA FUNÇÃO
   loadRentalData,
   saveRentalData,
   isRentalModeActive,

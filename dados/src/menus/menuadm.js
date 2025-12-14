@@ -20,148 +20,133 @@ ${formattedHeader}
 
 ${menuTopBorder}${separatorIcon} *${adminMenuTitle}*
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}ban
-${middleBorder}${menuItemIcon}${prefix}promover
-${middleBorder}${menuItemIcon}${prefix}rebaixar
-${middleBorder}${menuItemIcon}${prefix}mute
-${middleBorder}${menuItemIcon}${prefix}desmute
-${middleBorder}${menuItemIcon}${prefix}adv
-${middleBorder}${menuItemIcon}${prefix}rmadv
-${middleBorder}${menuItemIcon}${prefix}listadv
-${middleBorder}${menuItemIcon}${prefix}limparrank
-${middleBorder}${menuItemIcon}${prefix}resetrank
-${middleBorder}${menuItemIcon}${prefix}mantercontador
-${middleBorder}${menuItemIcon}${prefix}atividade
-${middleBorder}${menuItemIcon}${prefix}checkativo
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🔒 CONTROLE DE ACESSO*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}blockuser
-${middleBorder}${menuItemIcon}${prefix}unblockuser
-${middleBorder}${menuItemIcon}${prefix}listblocksgp
-${middleBorder}${menuItemIcon}${prefix}addblacklist
-${middleBorder}${menuItemIcon}${prefix}delblacklist
-${middleBorder}${menuItemIcon}${prefix}listblacklist
-${middleBorder}${menuItemIcon}${prefix}blockcmd
-${middleBorder}${menuItemIcon}${prefix}unblockcmd
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${managementMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}del
-${middleBorder}${menuItemIcon}${prefix}limpar
-${middleBorder}${menuItemIcon}${prefix}marcar
-${middleBorder}${menuItemIcon}${prefix}hidetag
-${middleBorder}${menuItemIcon}${prefix}sorteio
-${middleBorder}${menuItemIcon}${prefix}nomegrupo
-${middleBorder}${menuItemIcon}${prefix}descgrupo
-${middleBorder}${menuItemIcon}${prefix}fotogrupo
-${middleBorder}${menuItemIcon}${prefix}addregra
-${middleBorder}${menuItemIcon}${prefix}delregra
-${middleBorder}${menuItemIcon}${prefix}role.criar
-${middleBorder}${menuItemIcon}${prefix}role.alterar
-${middleBorder}${menuItemIcon}${prefix}role.excluir
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🎊 GESTÃO DE RESENHAS*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}resenha.nova
-${middleBorder}${menuItemIcon}${prefix}resenha.adicionar
-${middleBorder}${menuItemIcon}${prefix}resenha.alterar
-${middleBorder}${menuItemIcon}${prefix}resenha.pagar
-${middleBorder}${menuItemIcon}${prefix}resenha.todos
-${middleBorder}${menuItemIcon}${prefix}resenha.link
-${middleBorder}${menuItemIcon}${prefix}resenha.pagos
-${middleBorder}${menuItemIcon}${prefix}resenha.excluir
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *⚙️ GRUPO & PERMISSÕES*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}linkgp
-${middleBorder}${menuItemIcon}${prefix}grupo A/F
-${middleBorder}${menuItemIcon}${prefix}opengp HH:MM|off
-${middleBorder}${menuItemIcon}${prefix}closegp HH:MM|off
-${middleBorder}${menuItemIcon}${prefix}automsg
-${middleBorder}${menuItemIcon}${prefix}banghost
-${middleBorder}${menuItemIcon}${prefix}limitmessage
-${middleBorder}${menuItemIcon}${prefix}dellimitmessage
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${moderatorsMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addmod
-${middleBorder}${menuItemIcon}${prefix}delmod
-${middleBorder}${menuItemIcon}${prefix}listmods
-${middleBorder}${menuItemIcon}${prefix}grantmodcmd
-${middleBorder}${menuItemIcon}${prefix}revokemodcmd
-${middleBorder}${menuItemIcon}${prefix}listmodcmds
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🛡️ WHITELIST DE ANTIS*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}wl.add
-${middleBorder}${menuItemIcon}${prefix}wl.remove
-${middleBorder}${menuItemIcon}${prefix}wl.lista
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${partnershipsMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}parcerias
-${middleBorder}${menuItemIcon}${prefix}addparceria
-${middleBorder}${menuItemIcon}${prefix}delparceria
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🔒 SEGURANÇA & PROTEÇÃO*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}antiflood
-${middleBorder}${menuItemIcon}${prefix}antidoc
-${middleBorder}${menuItemIcon}${prefix}antiloc
-${middleBorder}${menuItemIcon}${prefix}antifig
-${middleBorder}${menuItemIcon}${prefix}antibtn
-${middleBorder}${menuItemIcon}${prefix}antilinkgp
-${middleBorder}${menuItemIcon}${prefix}antilinkhard
-${middleBorder}${menuItemIcon}${prefix}antiporn
-${middleBorder}${menuItemIcon}${prefix}antistatus
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${settingsMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}legendasaiu
-${middleBorder}${menuItemIcon}${prefix}legendabv
-${middleBorder}${menuItemIcon}${prefix}fotobv
-${middleBorder}${menuItemIcon}${prefix}rmfotobv
-${middleBorder}${menuItemIcon}${prefix}fotosaiu
-${middleBorder}${menuItemIcon}${prefix}rmfotosaiu
-${middleBorder}${menuItemIcon}${prefix}setprefix
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *💬 AUTO-RESPOSTAS*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addautoadm
-${middleBorder}${menuItemIcon}${prefix}addautoadmidia
-${middleBorder}${menuItemIcon}${prefix}listautoadm
-${middleBorder}${menuItemIcon}${prefix}delautoadm
-${middleBorder}${menuItemIcon}${prefix}autorespostas
-${middleBorder}${menuItemIcon}${prefix}autorepo
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *⚡ MODO & ATIVAÇÕES*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}autodl
-${middleBorder}${menuItemIcon}${prefix}minmessage
-${middleBorder}${menuItemIcon}${prefix}assistente
-${middleBorder}${menuItemIcon}${prefix}modobn
-${middleBorder}${menuItemIcon}${prefix}modonsfw
-${middleBorder}${menuItemIcon}${prefix}modoparceria
-${middleBorder}${menuItemIcon}${prefix}modogold
-${middleBorder}${menuItemIcon}${prefix}modolite
-${middleBorder}${menuItemIcon}${prefix}bemvindo
-${middleBorder}${menuItemIcon}${prefix}saida
-${middleBorder}${menuItemIcon}${prefix}autosticker
-${middleBorder}${menuItemIcon}${prefix}soadm
-${middleBorder}${menuItemIcon}${prefix}x9
-${middleBorder}${menuItemIcon}${prefix}cmdlimit
+	${middleBorder}${menuItemIcon}${prefix}abrirgp
+	${middleBorder}${menuItemIcon}${prefix}addblacklist
+	${middleBorder}${menuItemIcon}${prefix}addmod
+	${middleBorder}${menuItemIcon}${prefix}addmodcmd
+	${middleBorder}${menuItemIcon}${prefix}addparceria
+	${middleBorder}${menuItemIcon}${prefix}addpartnership
+	${middleBorder}${menuItemIcon}${prefix}addregra
+	${middleBorder}${menuItemIcon}${prefix}addrule
+	${middleBorder}${menuItemIcon}${prefix}adv
+	${middleBorder}${menuItemIcon}${prefix}advertir
+	${middleBorder}${menuItemIcon}${prefix}antibotao
+	${middleBorder}${menuItemIcon}${prefix}antibtn
+	${middleBorder}${menuItemIcon}${prefix}antidelete
+	${middleBorder}${menuItemIcon}${prefix}antidoc
+	${middleBorder}${menuItemIcon}${prefix}antifig
+	${middleBorder}${menuItemIcon}${prefix}antiflood
+	${middleBorder}${menuItemIcon}${prefix}antigore
+	${middleBorder}${menuItemIcon}${prefix}antilinkgp
+	${middleBorder}${menuItemIcon}${prefix}antilinkhard
+	${middleBorder}${menuItemIcon}${prefix}antiloc
+	${middleBorder}${menuItemIcon}${prefix}antiporn
+	${middleBorder}${menuItemIcon}${prefix}antispamcmd
+	${middleBorder}${menuItemIcon}${prefix}antistatus
+	${middleBorder}${menuItemIcon}${prefix}autocleanup
+	${middleBorder}${menuItemIcon}${prefix}autodl
+	${middleBorder}${menuItemIcon}${prefix}autodown
+	${middleBorder}${menuItemIcon}${prefix}automsg
+	${middleBorder}${menuItemIcon}${prefix}autoresposta
+	${middleBorder}${menuItemIcon}${prefix}autorespostas
+	${middleBorder}${menuItemIcon}${prefix}autosticker
+	${middleBorder}${menuItemIcon}${prefix}ban
+	${middleBorder}${menuItemIcon}${prefix}banghost
+	${middleBorder}${menuItemIcon}${prefix}bangp
+	${middleBorder}${menuItemIcon}${prefix}banir
+	${middleBorder}${menuItemIcon}${prefix}bemvindo
+	${middleBorder}${menuItemIcon}${prefix}blacklist
+	${middleBorder}${menuItemIcon}${prefix}blockcmd
+	${middleBorder}${menuItemIcon}${prefix}bv
+	${middleBorder}${menuItemIcon}${prefix}cita
+	${middleBorder}${menuItemIcon}${prefix}clean
+	${middleBorder}${menuItemIcon}${prefix}cleanup
+	${middleBorder}${menuItemIcon}${prefix}closegp
+	${middleBorder}${menuItemIcon}${prefix}configsaida
+	${middleBorder}${menuItemIcon}${prefix}delblacklist
+	${middleBorder}${menuItemIcon}${prefix}delfotobv
+	${middleBorder}${menuItemIcon}${prefix}delfotosaiu
+	${middleBorder}${menuItemIcon}${prefix}dellimitmessage
+	${middleBorder}${menuItemIcon}${prefix}delmod
+	${middleBorder}${menuItemIcon}${prefix}delmodcmd
+	${middleBorder}${menuItemIcon}${prefix}delparceria
+	${middleBorder}${menuItemIcon}${prefix}delpartnership
+	${middleBorder}${menuItemIcon}${prefix}delregra
+	${middleBorder}${menuItemIcon}${prefix}delrule
+	${middleBorder}${menuItemIcon}${prefix}demote
+	${middleBorder}${menuItemIcon}${prefix}desbangp
+	${middleBorder}${menuItemIcon}${prefix}desmutar
+	${middleBorder}${menuItemIcon}${prefix}desmute
+	${middleBorder}${menuItemIcon}${prefix}div
+	${middleBorder}${menuItemIcon}${prefix}divulgar
+	${middleBorder}${menuItemIcon}${prefix}exitimg
+	${middleBorder}${menuItemIcon}${prefix}exitmsg
+	${middleBorder}${menuItemIcon}${prefix}fotobv
+	${middleBorder}${menuItemIcon}${prefix}fotosaida
+	${middleBorder}${menuItemIcon}${prefix}fotosaiu
+	${middleBorder}${menuItemIcon}${prefix}gamemode
+	${middleBorder}${menuItemIcon}${prefix}grantmodcmd
+	${middleBorder}${menuItemIcon}${prefix}group
+	${middleBorder}${menuItemIcon}${prefix}grupo
+	${middleBorder}${menuItemIcon}${prefix}hidetag
+	${middleBorder}${menuItemIcon}${prefix}imgsaiu
+	${middleBorder}${menuItemIcon}${prefix}kick
+	${middleBorder}${menuItemIcon}${prefix}legendabv
+	${middleBorder}${menuItemIcon}${prefix}legendasaiu
+	${middleBorder}${menuItemIcon}${prefix}limitmessage
+	${middleBorder}${menuItemIcon}${prefix}limpar
+	${middleBorder}${menuItemIcon}${prefix}limparaluguel
+	${middleBorder}${menuItemIcon}${prefix}limpardb
+	${middleBorder}${menuItemIcon}${prefix}linkgp
+	${middleBorder}${menuItemIcon}${prefix}linkgroup
+	${middleBorder}${menuItemIcon}${prefix}listadv
+	${middleBorder}${menuItemIcon}${prefix}listblacklist
+	${middleBorder}${menuItemIcon}${prefix}listmodcmds
+	${middleBorder}${menuItemIcon}${prefix}listmods
+	${middleBorder}${menuItemIcon}${prefix}litemode
+	${middleBorder}${menuItemIcon}${prefix}marcar
+	${middleBorder}${menuItemIcon}${prefix}mark
+	${middleBorder}${menuItemIcon}${prefix}modlist
+	${middleBorder}${menuItemIcon}${prefix}modobn
+	${middleBorder}${menuItemIcon}${prefix}modolite
+	${middleBorder}${menuItemIcon}${prefix}modoparceria
+	${middleBorder}${menuItemIcon}${prefix}mutar
+	${middleBorder}${menuItemIcon}${prefix}mute
+	${middleBorder}${menuItemIcon}${prefix}onlyadm
+	${middleBorder}${menuItemIcon}${prefix}opengp
+	${middleBorder}${menuItemIcon}${prefix}parcerias
+	${middleBorder}${menuItemIcon}${prefix}partnerships
+	${middleBorder}${menuItemIcon}${prefix}promote
+	${middleBorder}${menuItemIcon}${prefix}promover
+	${middleBorder}${menuItemIcon}${prefix}rebaixar
+	${middleBorder}${menuItemIcon}${prefix}regras
+	${middleBorder}${menuItemIcon}${prefix}removeradv
+	${middleBorder}${menuItemIcon}${prefix}removerfotobv
+	${middleBorder}${menuItemIcon}${prefix}removerfotosaiu
+	${middleBorder}${menuItemIcon}${prefix}rentalclean
+	${middleBorder}${menuItemIcon}${prefix}revokemodcmd
+	${middleBorder}${menuItemIcon}${prefix}rmadv
+	${middleBorder}${menuItemIcon}${prefix}rmexitimg
+	${middleBorder}${menuItemIcon}${prefix}rmfotobv
+	${middleBorder}${menuItemIcon}${prefix}rmfotosaiu
+	${middleBorder}${menuItemIcon}${prefix}rmwelcomeimg
+	${middleBorder}${menuItemIcon}${prefix}saida
+	${middleBorder}${menuItemIcon}${prefix}setdesc
+	${middleBorder}${menuItemIcon}${prefix}setdiv
+	${middleBorder}${menuItemIcon}${prefix}setname
+	${middleBorder}${menuItemIcon}${prefix}soadm
+	${middleBorder}${menuItemIcon}${prefix}soadmin
+	${middleBorder}${menuItemIcon}${prefix}textbv
+	${middleBorder}${menuItemIcon}${prefix}textsaiu
+	${middleBorder}${menuItemIcon}${prefix}totag
+	${middleBorder}${menuItemIcon}${prefix}unban
+	${middleBorder}${menuItemIcon}${prefix}unbangp
+	${middleBorder}${menuItemIcon}${prefix}unblacklist
+	${middleBorder}${menuItemIcon}${prefix}unblockcmd
+	${middleBorder}${menuItemIcon}${prefix}unmute
+	${middleBorder}${menuItemIcon}${prefix}welcomeimg
+	${middleBorder}${menuItemIcon}${prefix}welcomemsg
+	${middleBorder}${menuItemIcon}${prefix}x9
 ${bottomBorder}
 `;
 }

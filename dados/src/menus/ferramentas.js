@@ -20,52 +20,26 @@ ${formattedHeader}
 
 ${menuTopBorder}${separatorIcon} *${nicknameMenuTitle}*
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}gerarnick
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${captureMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}ssweb
-${middleBorder}${menuItemIcon}${prefix}qrcode
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${linkMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}encurtalink
-${middleBorder}${menuItemIcon}${prefix}upload
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${securityMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}verificar <link>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${timeMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}hora <cidade/país>
-${middleBorder}${menuItemIcon}${prefix}clima <cidade>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${languageMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}dicionario
-${middleBorder}${menuItemIcon}${prefix}tradutor
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${reminderMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}lembrete
-${middleBorder}${menuItemIcon}${prefix}meuslembretes
-${middleBorder}${menuItemIcon}${prefix}apagalembrete
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🔒 SEGURANÇA & UTILIDADES*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}verificarurl <link>
-${middleBorder}${menuItemIcon}${prefix}clima <cidade>
-${middleBorder}${menuItemIcon}${prefix}hora <local>
-${middleBorder}${menuItemIcon}${prefix}aniversario
-${middleBorder}${menuItemIcon}${prefix}statsgrupo
+	${middleBorder}${menuItemIcon}${prefix}apagalembrete
+	${middleBorder}${menuItemIcon}${prefix}clima
+	${middleBorder}${menuItemIcon}${prefix}encurtalink
+	${middleBorder}${menuItemIcon}${prefix}gerarlink
+	${middleBorder}${menuItemIcon}${prefix}gerarnick
+	${middleBorder}${menuItemIcon}${prefix}imgpralink
+	${middleBorder}${menuItemIcon}${prefix}lembrar
+	${middleBorder}${menuItemIcon}${prefix}lembrete
+	${middleBorder}${menuItemIcon}${prefix}listalembretes
+	${middleBorder}${menuItemIcon}${prefix}meuslembretes
+	${middleBorder}${menuItemIcon}${prefix}nick
+	${middleBorder}${menuItemIcon}${prefix}nickgenerator
+	${middleBorder}${menuItemIcon}${prefix}printsite
+	${middleBorder}${menuItemIcon}${prefix}qrcode
+	${middleBorder}${menuItemIcon}${prefix}removerlembrete
+	${middleBorder}${menuItemIcon}${prefix}ssweb
+	${middleBorder}${menuItemIcon}${prefix}tinyurl
+	${middleBorder}${menuItemIcon}${prefix}upload
+	${middleBorder}${menuItemIcon}${prefix}videopralink
+	${middleBorder}${menuItemIcon}${prefix}wikipedia
 ${bottomBorder}
 `;
 }

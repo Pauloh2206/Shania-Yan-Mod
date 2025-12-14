@@ -76,6 +76,7 @@ import {
   addSubdono,
   removeSubdono,
   getSubdonos,
+  removeAllSubdonos, // <--- FUNÇÃO REMOVIDA
   loadRentalData,
   saveRentalData,
   isRentalModeActive,
@@ -8187,11 +8188,19 @@ Entre em contato com o dono do bot:
         if (isSubOwner && !isOwner) return reply("🚫 Subdonos não podem remover outros subdonos!");
         try {
           let targetUserId;
+          const cleanQ = q ? q.trim().toLowerCase() : ''; // Limpa e converte para minúsculas
+
+          // Opção 4: Remover TODOS os subdonos
+          if (cleanQ === 'all' || cleanQ === 'todos') {
+              // Chama a nova função para limpar a lista
+              const removeAllResult = await removeAllSubdonos(nazu); 
+              return await reply(removeAllResult.message);
+          }
           
           if (menc_jid2 && menc_jid2.length > 0) {
             targetUserId = menc_jid2[0];
             
-            // Tentar obter o LID real
+            // Tentar obter o LID real (Lógica de obtenção de LID/JID)
             if (isGroup && groupMetadata?.participants) {
               const participant = groupMetadata.participants.find(p => 
                 p.id === targetUserId || p.lid === targetUserId
@@ -8248,7 +8257,7 @@ Entre em contato com o dono do bot:
               }
             }
           } else {
-            return reply(`📝 *Como usar:*\n\n1️⃣ Marque o usuário: ${prefix}remsubdono @usuario\n2️⃣ Digite o número: ${prefix}remsubdono 5511999998888\n3️⃣ Use o índice da lista: ${prefix}remsubdono 1`);
+            return reply(`📝 *Como usar:*\n\n1️⃣ Marque o usuário: ${prefix}remsubdono @usuario\n2️⃣ Digite o número: ${prefix}remsubdono 5511999998888\n3️⃣ Use o índice da lista: ${prefix}remsubdono 1\n4️⃣ *Remover Todos:* ${prefix}remsubdono todos`);
           }
           
           const result = await removeSubdono(targetUserId, nazu);
@@ -8258,6 +8267,7 @@ Entre em contato com o dono do bot:
           await reply("❌ Ocorreu um erro inesperado ao tentar remover o subdono.");
         }
         break;
+
       case 'listasubdonos':
       case 'listsubdonos':
         if (!isOwnerOrSub) return reply("🚫 Apenas o Dono e Subdonos podem ver a lista!");
@@ -13081,9 +13091,12 @@ case 'rankuserclean':
 
 case 'clima':
     try {
+        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
+
         const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
         
         if (!GEMINI_API_KEY) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
             return reply('❌ Erro: Chave da API Gemini não configurada. Defina-a no seu ambiente (defina no .env)');
         }
 
@@ -13092,6 +13105,7 @@ case 'clima':
         const parts = rawBodyWithoutPrefix.split(/\s+/);
 
         if (parts.length <= 1 || parts[0].toLowerCase() !== commandName) {
+             await nazu.sendMessage(from, { react: { text: '☁️', key: info.key } });
              return reply('⚠️ Informe a cidade. Exemplo: /clima Montes Claros MG');
         }
         
@@ -13099,9 +13113,14 @@ case 'clima':
         
         const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
 
-        await reply(`*⏳ Consultando o clima atual para ${cidade} via API Gemini...*`);
+        await reply(`*⏳ Consultando o clima atual para ${cidade} via Gemini...*`);
 
-        const prompt = `Qual é o clima atual, temperatura, sensação térmica, umidade e condição do vento em ${cidade}? Responda de forma concisa em um único parágrafo e use emojis para formatar os dados.`;
+        // --- URL da Imagem do GitHub ---
+        // SUBSTITUA ESTA URL PELA SUA IMAGEM REAL DO CLIMA
+        const CLIMA_IMAGE_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem_up/refs/heads/main/0.jpg'; 
+        // -----------------------------------
+
+        const prompt = `Qual é o clima atual, temperatura, sensação térmica, umidade e condição do vento em ${cidade}? Responda de forma concisa em no máximo um parágrafo. Utilize emojis relevantes para formatar os dados. Comece a resposta com a condição climática (Ex: "Atualmente, em...") e evite frases de encerramento.`;
         
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -13114,29 +13133,47 @@ case 'clima':
         const respostaGemini = response.text;
 
         const resultadoFormatado = `
-╭━─━━━━━━━━━━━━━━─╮ 
-*☁️ CLIMA EM TEMPO REAL*
-📍 *Local:* ${cidade}
-╰━━━━━━━━━━━━━━━━━╯        
-
-📝 *Relatório:*
-
-
+*☁️ RELATÓRIO DO CLIMA*
+*📍 Local:* ${cidade}
+------------------------------------
+*📝 Condições:*
 ${respostaGemini}
-------------------------------------------------
-_Fonte: Busca Gemini em tempo real_
-_Desenvolvida por: Paulo Hernani (Taki)_
-_Assistente: Gemini IA_
-------------------------------------------------`; // <--- O BACKTICK AGORA ESTÁ AQUI
+------------------------------------
 
-        await reply(resultadoFormatado);
+_Fonte: Busca Gemini em tempo real_
+_Assistente: Gemini IA_
+_Desenvolvedor: Paulo Hernani (Taki)_`; 
+
+        // 1. Baixar a imagem da URL
+        const imageBuffer = (await axios.get(CLIMA_IMAGE_URL, { responseType: 'arraybuffer' })).data;
+        
+        // 2. Enviar a imagem com a legenda (caption)
+        await nazu.sendMessage(from, {
+            image: imageBuffer,
+            caption: resultadoFormatado.trim(), 
+        }, { quoted: info });
+        
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+
 
     } catch (e) {
         console.error("Erro no comando clima:", e);
-        // Mensagem de erro mais clara em caso de falha na API
-        await reply(`❌ Ocorreu um erro ao processar a solicitação de clima via Gemini. Detalhe: ${e.message}. Verifique a sua chave de API.`);
+        
+        // Se falhar o Gemini OU o axios.get da imagem, cai aqui
+        let errorMessage = '❌ Ocorreu um erro desconhecido ao processar a solicitação de clima.';
+        if (e.message && e.message.includes('API key')) {
+            errorMessage = '❌ Ocorreu um erro ao processar a solicitação de clima via Gemini. Verifique a sua chave de API.';
+        } else if (axios.isAxiosError(e)) {
+            errorMessage = `❌ Erro de Rede: Não foi possível baixar a imagem do GitHub ou acessar a API. Status: ${e.response?.status || 'desconhecido'}.`;
+        } else {
+             errorMessage = `❌ Ocorreu um erro inesperado ao processar o clima. Detalhe: ${e.message}`;
+        }
+
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        await reply(errorMessage);
     }
     break;
+
 case 'anime':
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });

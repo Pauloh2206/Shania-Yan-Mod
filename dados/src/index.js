@@ -1,3 +1,4 @@
+import { autoWarnUser } from './utils/autoWarn.js';
 import { 
     downloadYoutubeMp4_480p 
 } from './utils/youtubeVideo.js';
@@ -3163,6 +3164,36 @@ Código: *${roleCode}*`,
         }
       }
     }
+   // ... (após a lógica onde você define 'isCmd', 'isGroup', etc.)
+
+    // VERIFICAÇÃO ADICIONAL: Garante que haja um comando após o prefixo.
+    // 'command' é o comando principal sem o prefixo (ex: 'play').
+    const isCmdValid = isCmd && command.length > 0; 
+    
+    if (isCmdValid && isGroup) { 
+        // 1. Define quem tem permissão para USAR comandos sem ser advertido
+        const hasPermission = isOwner || isSubOwner || isGroupAdmin;
+
+        if (!hasPermission) {
+            // Se não tem permissão, verifica o Auto-Warn
+            const shouldBlock = await autoWarnUser(
+                sender, 
+                from, 
+                nazu, 
+                command, // Passa o comando real (ex: 'play')
+                info
+            );
+            
+            // 🛑 BLOQUEIO CONDICIONAL: Interrompe a execução SOMENTE se Auto-Warn estiver ON
+            if (shouldBlock) {
+                return; 
+            }
+        }
+    }
+    
+    // AQUI CONTINUA COM O 'cmdlimitar', etc.
+// ...
+
 
     if (isCmd && !['cmdlimitar', 'cmdlimit', 'limitarcmd', 'cmddeslimitar', 'cmdremovelimit', 'rmcmdlimit', 'cmdlimites', 'cmdlimits', 'listcmdlimites'].includes(command)) {
       const globalLimitCheck = checkCommandLimit(command, sender);
@@ -13544,7 +13575,68 @@ ${mensagemBruta}
         await reply("❌ Ocorreu um erro interno. Verifique o console.");
     }
     break;    
-    
+  
+    // ... (dentro do switch/case em index.js)
+
+    // ... (dentro do switch/case em index.js)
+
+    case 'autoav':
+    case 'autoadv':
+        try {
+            if (!isGroup) return reply("Este comando só pode ser usado em grupos.");
+            
+            // 💡 CORREÇÃO 1: Verifica se é ADM DO GRUPO, DONO ou SUBDONO 💡
+            const canManageAutoWarn = isOwner || isSubOwner || isGroupAdmin;
+            if (!canManageAutoWarn) {
+                 return reply("Apenas o Dono, Subdonos, ou Administradores do grupo podem ligar/desligar o Auto-Warn.");
+            }
+            
+            // Pega o primeiro argumento (on, off, status)
+            const [action] = args; 
+            
+            // Certifique-se de que a função buildGroupFilePath esteja disponível
+            const groupFilePath = buildGroupFilePath(from);
+            let groupData;
+            
+            try {
+                groupData = fs.existsSync(groupFilePath) ? 
+                    JSON.parse(fs.readFileSync(groupFilePath, 'utf-8')) : 
+                    { config: {} };
+            } catch (error) {
+                console.error('[AUTOAV] Erro ao ler dados do grupo:', error);
+                groupData = { config: {} };
+            }
+            
+            groupData.config = groupData.config || {}; 
+            const currentStatus = groupData.config.auto_warn_enabled ? 'ATIVADO ✅' : 'DESATIVADO ❌';
+
+            if (!action || (action !== 'on' && action !== 'off' && action !== 'ativar' && action !== 'desativar')) {
+                return reply(`⚙️ **Status do Auto-Warn:** ${currentStatus}\n\nUse:\n${prefix}autoav on - Ligar a função.\n${prefix}autoav off - Desligar a função.`);
+            }
+            
+            let newState;
+            if (action === 'on' || action === 'ativar') {
+                newState = true;
+                if (groupData.config.auto_warn_enabled) return reply(`⚠️ O Auto-Warn já está ${currentStatus}`);
+            } else { // 'off' ou 'desativar'
+                newState = false;
+                if (!groupData.config.auto_warn_enabled) return reply(`⚠️ O Auto-Warn já está ${currentStatus}`);
+            }
+
+            groupData.config.auto_warn_enabled = newState;
+            fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2), 'utf-8');
+            
+            const statusMessage = newState ? '✅ **Auto-Warn ATIVADO!**' : '❌ **Auto-Warn DESATIVADO!**';
+            reply(statusMessage);
+
+        } catch (e) {
+            console.error('[AUTOAV] Erro ao configurar Auto-Warn:', e);
+            reply("Ocorreu um erro ao tentar configurar a função Auto-Warn.");
+        }
+        break;
+        
+// ... (restante dos cases)
+
       case 'qc': {
   try {
     let texto = q && q.trim()

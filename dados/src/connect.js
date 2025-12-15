@@ -24,7 +24,7 @@ const __dirname = dirname(__filename);
 // >> NOVO: Caminho para o arquivo de mídia de boas-vindas do bot e do grupo <<
 // O bot tentará enviar este arquivo como boas-vindas se ele existir.
 // Corrigido o nome da pasta de 'media' para 'midias'
-const WELCOME_MEDIA_PATH = path.join(__dirname, '..', 'midias', 'welcome_bot.png'); 
+const WELCOME_MEDIA_PATH = path.join(__dirname, '..', 'midias', 'welcome_bot.gif'); 
 
 // Cache para versão do Baileys
 let baileysVersionCache = null;

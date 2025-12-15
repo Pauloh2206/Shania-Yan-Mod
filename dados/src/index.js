@@ -10445,7 +10445,7 @@ case 'playvid':
 
         if (!q) {
             await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
-            return reply(`🎬 *DOWNLOAD DE VÍDEO* 🎬\n\n📝 Digite o nome do vídeo ou link do YouTube.\n\n*Exemplo:* ${prefix}ytmp4 trailer novo`);
+            return reply(`🎬 *DOWNLOAD DE VÍDEO* 🎬\n\n📝 Digite o nome do vídeo.\n\n*Exemplo:* ${prefix}ytmp4 trailer novo`);
         }
         
         const query = q.substring(0, 150);
@@ -10528,7 +10528,7 @@ case 'musica':
 
         if (!q) {
             await nazu.sendMessage(from, { react: { text: '', key: info.key } }); 
-            return reply(`🎵 *YOUTUBE PLAYER* 🎵\n\n📝 Digite o nome da música ou link do YouTube.\n\n*Exemplo:* ${prefix}play Shania Yan Attack on Titan`);
+            return reply(`🎵 *YOUTUBE PLAYER* 🎵\n\n📝 Digite o nome da música.\n\n*Exemplo:* ${prefix}play Shania Yan Attack on Titan`);
         }
 
         await reply(`🔍 _Buscando música e informações de_ *"${q}"*...`);

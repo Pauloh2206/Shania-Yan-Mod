@@ -1,4 +1,3 @@
-import { setMaintenanceStatus } from './utils/ownerManagement.js';
 import { autoWarnUser } from './utils/autoWarn.js';
 import { 
     downloadYoutubeMp4_480p 
@@ -203,69 +202,6 @@ import {
 function getBotJID(client) { 
     return client.user.id.split(':')[0] + '@s.whatsapp.net';
 }
-
-// --- FUNÇÃO AUXILIAR PARA OBTER GRUPOS ---
-// --- FUNÇÃO AUXILIAR PARA OBTER GRUPOS ---
-/**
- * Busca e retorna uma lista de IDs de todos os grupos dos quais o bot é participante.
- * Implementa try/catch para lidar com falhas de conexão durante a busca.
- * @param {object} nazu - A instância da conexão do seu bot (WA bot instance).
- * @returns {Array<object>} Uma lista de objetos com a chave 'id' (o JID do grupo), ou um array vazio em caso de erro.
- */
-async function getBotGroups(nazu) {
-    try {
-        // 🚨 LÓGICA DE BUSCA DE GRUPOS 🚨
-        // Esta é a forma padrão para muitos bots baseados em whatsapp/baileys.
-        // Se você usa outra forma de buscar grupos, substitua apenas estas duas linhas:
-        const allChats = await nazu.groupFetchAllParticipating();
-        const groupIds = Object.keys(allChats).map(key => allChats[key].id);
-        
-        return groupIds.map(id => ({ id }));
-
-    } catch (error) {
-        // 💥 CORREÇÃO (SOLUÇÃO 2): Tratamento de Erro de Conexão 💥
-        console.error("Erro ao tentar buscar lista de grupos (Conexão Instável):", error.message);
-        
-        // Retorna um array vazio para que a função chamadora (sendReturnNotice)
-        // possa prosseguir sem quebrar o bot, apenas pulando o envio.
-        return []; 
-    }
-}
-// ------------------------------------------
-
-// --- Função Auxiliar: Envia aviso de retorno aos grupos (sendReturnNotice) ---
-/**
- * Envia um aviso de retorno de operação para todos os grupos ativos.
- * Inclui verificação de estado da conexão antes de iniciar o envio.
- * @param {object} nazu - A instância da conexão do seu bot.
- * @param {function} reply - Função de resposta para o Dono.
- */
-async function sendReturnNotice(nazu, reply) {
-    const returnMessage = "🤖 *FIM DA MANUTENÇÃO!* 🥳\n\nEstou de volta e 100% funcional. Obrigada pela paciência!";
-    if (nazu.ws.readyState !== nazu.ws.OPEN) {
-        return reply("❌ Falha ao enviar aviso de retorno: O bot não está conectado ao WhatsApp no momento. Tente novamente em 30 segundos.");
-    }
-    // --------------------------------------------------------------------------
-
-    try {
-        const activeGroups = await getBotGroups(nazu); 
-        
-        if (activeGroups.length === 0) {
-             return reply("⚠️ Aviso de retorno não enviado: Não foi possível obter uma lista de grupos ativos ou a lista está vazia.");
-        }
-
-        for (const group of activeGroups) {
-            await nazu.sendMessage(group.id, { text: returnMessage });
-            // Pequeno delay obrigatório para evitar flood e banimento
-            await new Promise(resolve => setTimeout(resolve, 500)); 
-        }
-        reply(`✅ Aviso de retorno enviado para ${activeGroups.length} grupos.`);
-    } catch (e) {
-        // Bloco try/catch já existente que agora é mais uma medida de segurança
-        console.error("Erro ao enviar aviso de retorno aos grupos:", e);
-        reply("❌ Aviso de retorno finalizado com erro na comunicação (provavelmente desconexão durante o envio em massa).");
-    }
-}
 // ------------------------------------------------------------------
 
 function toJid(number) {
@@ -293,8 +229,6 @@ async function checkBotAdmin(nazu, groupId) {
     }
 }
 // ===============================================
-global.maintenanceCooldown = global.maintenanceCooldown || new Map();
-
 const AVATAR_FALLBACK_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem_up/refs/heads/main/4.png';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathz.dirname(__filename);
@@ -3287,33 +3221,6 @@ Entre em contato com o dono do bot:
         return;
       }
     }
-
-const COOLDOWN_DURATION = 30 * 1000;
-const maintenanceMsg = "🚧 *BOT EM MANUTENÇÃO* 🚧\n\nEstou temporariamente fora do ar. Por favor, aguarde até que o Dono finalize a manutenção. Tentarei responder em breve!";
-
-// --- FILTRO ANTI-AUTO-RESPOSTA ---
-if (budy2 && budy2.trim() === maintenanceMsg.trim()) {
-    return;
-}
-// ----------------------------------
-
-// --- BLOQUEIO DE MODO MANUTENÇÃO COM COOLDOWN ---
-const isMaintenanceMode = !!config.maintenanceMode;
-
-if (isMaintenanceMode && !isOwner && isCmd) {
-    const now = Date.now();
-    const lastSentTime = global.maintenanceCooldown.get(from) || 0;
-
-    if (now - lastSentTime < COOLDOWN_DURATION) {
-        return;
-    }
-
-    await reply(maintenanceMsg);
-
-    global.maintenanceCooldown.set(from, now);
-
-    return;
-}
 // -----------------------------------------------------------
     switch (command) {
       
@@ -13737,58 +13644,7 @@ ${mensagemBruta}
             console.error('[AUTOAV] Erro ao configurar Auto-Warn:', e);
             reply("Ocorreu um erro ao tentar configurar a função Auto-Warn.");
         }
-        break;
-        
-case 'manutencao':
-case 'maintenance':
-        if (!isOwner) return reply("🚫 Comando exclusivo para Donos.");
-
-        const mode = q?.trim()?.toLowerCase();
-        
-        if (!mode) {
-            return reply(`📝 *Comando de Manutenção:*\n\nUse:\n${prefix}manutencao on / ativar (liga a manutenção)\n${prefix}manutencao off / desativar (desliga e avisa grupos)`);
-        }
-        
-        let newStatus = false;
-        let finalMessage = "";
-
-        const currentConfig = config; 
-        const wasMaintenanceOn = !!currentConfig.maintenanceMode;
-
-        if (mode === 'on' || mode === 'ativar') {
-            newStatus = true;
-            
-            if (wasMaintenanceOn) {
-                return reply("⚠️ O MODO DE MANUTENÇÃO já está *ATIVADO*!");
-            }
-            
-            finalMessage = "🛠️ MODO DE MANUTENÇÃO ATIVADO! Nenhuma função será processada até que seja desativado.";
-        
-        } else if (mode === 'off' || mode === 'desativar') {
-            newStatus = false;
-            
-            if (!wasMaintenanceOn) {
-                return reply("✅ O MODO DE MANUTENÇÃO já está *DESATIVADO*!");
-            }
-
-            finalMessage = "✅ MODO DE MANUTENÇÃO DESATIVADO. O bot está novamente em operação.";
-        
-        } else {
-            return reply(`❌ Modo inválido. Use '${prefix}manutencao on' ou '${prefix}manutencao off'.`);
-        }
-        
-        const result = await setMaintenanceStatus(newStatus);
-
-        if (result.success) {
-            await reply(finalMessage);
-            
-            if (!newStatus && wasMaintenanceOn) {
-                await sendReturnNotice(nazu, reply); 
-            }
-        } else {
-            await reply(result.message);
-        }
-        break;
+        break;        
 
       case 'qc': {
   try {

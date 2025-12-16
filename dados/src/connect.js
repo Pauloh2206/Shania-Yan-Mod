@@ -6,10 +6,8 @@ import { Boom } from '@hapi/boom';
 import NodeCache from 'node-cache';
 import readline from 'readline';
 import pino from 'pino';
-// ↓↓↓↓↓ CORREÇÃO DE IMPORTAÇÃO NECESSÁRIA PARA RESOLVER O SyntaxError E PERMITIR O USO DE fsPromises.access ↓↓↓↓↓
 import fs from 'fs'; 
 import * as fsPromises from 'fs/promises'; 
-// ↑↑↑↑↑ CORREÇÃO DE IMPORTAÇÃO NECESSÁRIA ↑↑↑↑↑
 import path, { dirname, join } from 'path'; 
 import qrcode from 'qrcode-terminal';
 import { readFileSync } from 'fs';
@@ -24,15 +22,8 @@ import { buildUserId } from './utils/helpers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// ↓↓↓↓↓ INÍCIO DA MODIFICAÇÃO DE BUSCA DINÂMICA (BEM-VINDO) ↓↓↓↓↓
-// Caminho BASE para o arquivo de mídia de boas-vindas (sem extensão)
 const WELCOME_MEDIA_BASE_PATH = path.join(__dirname, '..', 'midias', 'welcome_bot'); 
 
-/**
- * Verifica se um arquivo de boas-vindas com qualquer extensão suportada existe.
- * @returns {Promise<string|null>} O caminho completo do arquivo ou null.
- */
 async function getWelcomeMediaPath() {
     const supportedExtensions = ['.gif', '.mp4', '.jpg', '.jpeg', '.png'];
     

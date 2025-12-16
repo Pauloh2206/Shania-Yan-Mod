@@ -1,13 +1,17 @@
+// connect.js (Código Completo Revisado - Apenas Bem-vindo e Importação)
+
 import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from 'whaileys';
 const makeWASocket = a.default;
 import { Boom } from '@hapi/boom';
 import NodeCache from 'node-cache';
 import readline from 'readline';
 import pino from 'pino';
-import fs from 'fs/promises';
-import path, { dirname, join } from 'path';
+// ↓↓↓↓↓ CORREÇÃO DE IMPORTAÇÃO NECESSÁRIA PARA RESOLVER O SyntaxError E PERMITIR O USO DE fsPromises.access ↓↓↓↓↓
+import fs from 'fs'; 
+import * as fsPromises from 'fs/promises'; 
+// ↑↑↑↑↑ CORREÇÃO DE IMPORTAÇÃO NECESSÁRIA ↑↑↑↑↑
+import path, { dirname, join } from 'path'; 
 import qrcode from 'qrcode-terminal';
-import { readFile } from 'fs/promises';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
@@ -21,10 +25,31 @@ import { buildUserId } from './utils/helpers.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// >> NOVO: Caminho para o arquivo de mídia de boas-vindas do bot e do grupo <<
-// O bot tentará enviar este arquivo como boas-vindas se ele existir.
-// Corrigido o nome da pasta de 'media' para 'midias'
-const WELCOME_MEDIA_PATH = path.join(__dirname, '..', 'midias', 'welcome_bot.gif'); 
+// ↓↓↓↓↓ INÍCIO DA MODIFICAÇÃO DE BUSCA DINÂMICA (BEM-VINDO) ↓↓↓↓↓
+// Caminho BASE para o arquivo de mídia de boas-vindas (sem extensão)
+const WELCOME_MEDIA_BASE_PATH = path.join(__dirname, '..', 'midias', 'welcome_bot'); 
+
+/**
+ * Verifica se um arquivo de boas-vindas com qualquer extensão suportada existe.
+ * @returns {Promise<string|null>} O caminho completo do arquivo ou null.
+ */
+async function getWelcomeMediaPath() {
+    const supportedExtensions = ['.gif', '.mp4', '.jpg', '.jpeg', '.png'];
+    
+    // Usando fsPromises que foi corrigido na importação
+    for (const ext of supportedExtensions) {
+        const fullPath = WELCOME_MEDIA_BASE_PATH + ext;
+        try {
+            await fsPromises.access(fullPath); 
+            return fullPath;
+        } catch (e) {
+            continue; 
+        }
+    }
+    return null; // Nenhum arquivo encontrado
+}
+// ↑↑↑↑↑ FIM DA MODIFICAÇÃO DE BUSCA DINÂMICA (BEM-VINDO) ↑↑↑↑↑
+
 
 // Cache para versão do Baileys
 let baileysVersionCache = null;
@@ -317,7 +342,7 @@ let config;
 
 // Validação de configuração
 try {
-    const configContent = readFileSync(configPath, "utf8");
+    const configContent = fs.readFileSync(configPath, "utf8");
     config = JSON.parse(configContent);
     
     // Valida campos obrigatórios
@@ -420,7 +445,7 @@ const ask = (question) => {
 
 async function clearAuthDir() {
     try {
-        await fs.rm(AUTH_DIR, {
+        await fsPromises.rm(AUTH_DIR, {
             recursive: true,
             force: true
         });
@@ -433,7 +458,7 @@ async function clearAuthDir() {
 async function loadGroupSettings(groupId) {
     const groupFilePath = path.join(DATABASE_DIR, 'grupos', `${groupId}.json`);
     try {
-        const data = await fs.readFile(groupFilePath, 'utf-8');
+        const data = await fsPromises.readFile(groupFilePath, 'utf-8');
         return JSON.parse(data);
     } catch (e) {
         console.error(`❌ Erro ao ler configurações do grupo ${groupId}: ${e.message}`);
@@ -443,7 +468,7 @@ async function loadGroupSettings(groupId) {
 
 async function loadGlobalBlacklist() {
     try {
-        const data = await fs.readFile(GLOBAL_BLACKLIST_PATH, 'utf-8');
+        const data = await fsPromises.readFile(GLOBAL_BLACKLIST_PATH, 'utf-8');
         return JSON.parse(data).users || {};
     } catch (e) {
         console.error(`❌ Erro ao ler blacklist global: ${e.message}`);
@@ -459,7 +484,7 @@ function formatMessageText(template, replacements) {
     return text;
 }
 
-// === FUNÇÃO createGroupMessage MODIFICADA COM LÓGICA DE MP4/GIF/PNG/JPG E DEBUG ===
+// === FUNÇÃO createGroupMessage MODIFICADA COM LÓGICA DE BUSCA DINÂMICA E FORÇANDO gifPlayback ===
 async function createGroupMessage(NazunaSock, groupMetadata, participants, settings, isWelcome = true) {
     const jsonGp = await loadGroupSettings(groupMetadata.id);
     const mentions = participants.map(p => p);
@@ -475,18 +500,17 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
         (jsonGp.exit.text ? jsonGp.exit.text : "╭━━━⊱ 👋 *ATÉ LOGO!* 👋 ⊱━━━╮\n│\n│ 👤 #numerodele#\n│\n│ 🚪 Saiu do grupo\n│ *#nomedogp#*\n│\n╰━━━━━━━━━━━━━━━━━━━━━━╯\n\n💫 *Até a próxima!* 💫");
     const text = formatMessageText(settings.text || defaultText, replacements);
 
-    // --- INÍCIO DA LÓGICA DE ENVIO DE MP4/GIF/PNG/JPG PARA GRUPO ---
+    // --- INÍCIO DA LÓGICA DE ENVIO DE MP4/GIF/PNG/JPG PARA GRUPO COM BUSCA DINÂMICA ---
     if (isWelcome) {
-        console.log(`[DEBUG] Tentando enviar mídia de boas-vindas para o grupo: ${groupMetadata.id}`);
         try {
-            const mediaPath = WELCOME_MEDIA_PATH;
-            console.log(`[DEBUG] Caminho do arquivo configurado: ${mediaPath}`);
+            const mediaPath = await getWelcomeMediaPath(); // <-- Busca o caminho dinamicamente
             
-            // Tenta acessar o arquivo de mídia
-            await fs.access(mediaPath); 
-            console.log(`[DEBUG] Arquivo encontrado com sucesso: ${path.basename(mediaPath)}`);
-
-            const mediaBuffer = await fs.readFile(mediaPath);
+            if (!mediaPath) {
+                // Se não encontrar, continua e reverte para texto no final
+                throw new Error("Media not found, reverting to text.");
+            }
+            
+            const mediaBuffer = await fsPromises.readFile(mediaPath);
             const ext = path.extname(mediaPath).toLowerCase();
             const isGif = ext === '.gif';
             const isMp4 = ext === '.mp4';
@@ -494,7 +518,6 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
             const isPng = ext === '.png';
             
             if (isMp4 || isGif || isJpg || isPng) {
-                console.log(`[DEBUG] Tipo de arquivo: ${isGif ? 'GIF' : isMp4 ? 'MP4' : 'IMAGEM'}. Montando payload de mídia.`);
                 
                 // Payload para Vídeo/GIF
                 if (isMp4 || isGif) {
@@ -502,7 +525,7 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
                         video: mediaBuffer,
                         caption: text,
                         mimetype: 'video/mp4', 
-                        gifPlayback: isGif,
+                        gifPlayback: true, // <-- MUDANÇA: FORÇA SEMPRE TRUE PARA GARANTIR O LOOP (GIF/MP4)
                         mentions
                     };
                 }
@@ -522,11 +545,10 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
             }
 
         } catch (mediaError) {
-            // Se o arquivo não existe (ENOENT) ou não pode ser lido (EACCES), reverte para texto
-            console.error(`[DEBUG] FALHA ao acessar/enviar o arquivo de mídia de boas-vindas do grupo. Revertendo para texto. Erro: ${mediaError.code || mediaError.message}`);
+            // Se o arquivo não existe (ENOENT) ou a busca falhou, o código continua no bloco de mensagem padrão.
         }
     }
-    // --- FIM DA LÓGICA DE ENVIO DE MP4/GIF/PNG/JPG PARA GRUPO ---
+    // --- FIM DA LÓGICA DE ENVIO DE MP4/GIF/PNG/JPG PARA GRUPO COM BUSCA DINÂMICA ---
 
     // Mensagem padrão (texto ou imagem se houver URL)
     const message = {
@@ -745,7 +767,7 @@ async function scanForJids(directory) {
 
     const scanFileContent = async (filePath) => {
         try {
-            const content = await fs.readFile(filePath, 'utf-8');
+            const content = await fsPromises.readFile(filePath, 'utf-8');
             const jsonObj = JSON.parse(content);
             const fileJids = collectJidsFromJson(jsonObj);
             if (fileJids.size > 0) {
@@ -755,7 +777,7 @@ async function scanForJids(directory) {
         } catch (parseErr) {
             console.warn(`⚠️ Arquivo ${filePath} não é JSON válido. Usando fallback regex.`);
             const jidPattern = /(\d+@s\.whatsapp\.net)/g;
-            const content = await fs.readFile(filePath, 'utf-8');
+            const content = await fsPromises.readFile(filePath, 'utf-8');
             let match;
             const fileJids = new Set();
             while ((match = jidPattern.exec(content)) !== null) {
@@ -788,7 +810,7 @@ async function scanForJids(directory) {
 
     const scanDir = async (dirPath) => {
         try {
-            const entries = await fs.readdir(dirPath, { withFileTypes: true });
+            const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
             for (const entry of entries) {
                 const fullPath = join(dirPath, entry.name);
                 if (entry.isDirectory()) {
@@ -833,14 +855,14 @@ async function replaceJidsInContent(affectedFiles, jidToLidMap, orphanJidsSet) {
 
     for (const [filePath, jids] of affectedFiles) {
         try {
-            const content = await fs.readFile(filePath, 'utf-8');
+            const content = await fsPromises.readFile(filePath, 'utf-8');
             let jsonObj = JSON.parse(content);
             const replacementsCount = { count: 0 };
             const removalsCount = { count: 0 };
             replaceJidsInJson(jsonObj, jidToLidMap, orphanJidsSet, replacementsCount, removalsCount);
             if (replacementsCount.count > 0 || removalsCount.count > 0) {
                 const updatedContent = JSON.stringify(jsonObj, null, 2);
-                await fs.writeFile(filePath, updatedContent, 'utf-8');
+                await fsPromises.writeFile(filePath, updatedContent, 'utf-8');
                 totalReplacements += replacementsCount.count;
                 totalRemovals += removalsCount.count;
                 updatedFiles.push(path.basename(filePath));
@@ -863,7 +885,7 @@ async function handleJidFiles(jidFiles, jidToLidMap, orphanJidsSet) {
     for (const [jid, oldPath] of jidFiles) {
         if (orphanJidsSet.has(jid)) {
             try {
-                await fs.unlink(oldPath);
+                await fsPromises.unlink(oldPath);
                 deletedFiles.push(path.basename(oldPath));
                 totalRemovals++;
                 continue;
@@ -878,7 +900,7 @@ async function handleJidFiles(jidFiles, jidToLidMap, orphanJidsSet) {
         }
 
         try {
-            const content = await fs.readFile(oldPath, 'utf-8');
+            const content = await fsPromises.readFile(oldPath, 'utf-8');
             let jsonObj = JSON.parse(content);
             const replacementsCount = { count: 0 };
             const removalsCount = { count: 0 };
@@ -890,13 +912,13 @@ async function handleJidFiles(jidFiles, jidToLidMap, orphanJidsSet) {
             const newPath = join(dir, `${lid}.json`);
 
             try {
-                await fs.access(newPath);
+                await fsPromises.access(newPath);
                 continue;
             } catch {}
 
             const updatedContent = JSON.stringify(jsonObj, null, 2);
-            await fs.writeFile(newPath, updatedContent, 'utf-8');
-            await fs.unlink(oldPath);
+            await fsPromises.writeFile(newPath, updatedContent, 'utf-8');
+            await fsPromises.unlink(oldPath);
 
             updatedFiles.push(path.basename(newPath));
             renamedFiles.push({ old: path.basename(oldPath), new: path.basename(newPath) });
@@ -968,7 +990,7 @@ async function updateOwnerLid(NazunaSock) {
         const result = await fetchLidWithRetry(NazunaSock, ownerJid);
         if (result) {
             config.lidowner = result.lid;
-            await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+            await fsPromises.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
         }
     } catch (err) {
         console.error(`❌ Erro ao atualizar LID do dono: ${err.message}`);
@@ -1021,8 +1043,8 @@ async function performMigration(NazunaSock) {
 
 async function createBotSocket(authDir) {
     try {
-        await fs.mkdir(path.join(DATABASE_DIR, 'grupos'), { recursive: true });
-        await fs.mkdir(authDir, { recursive: true });
+        await fsPromises.mkdir(path.join(DATABASE_DIR, 'grupos'), { recursive: true });
+        await fsPromises.mkdir(authDir, { recursive: true });
         const {
             state,
             saveCreds,
@@ -1207,54 +1229,50 @@ async function createBotSocket(authDir) {
                         setTimeout(async () => {
                             try {
                                 const ownerJid = buildUserId(numerodono, config);
-                                const mediaPath = WELCOME_MEDIA_PATH;
                                 
+                                // ↓↓↓↓↓ INÍCIO DA MODIFICAÇÃO DE BUSCA DINÂMICA E FORÇANDO gifPlayback (BOT ON) ↓↓↓↓↓
+                                const mediaPath = await getWelcomeMediaPath(); 
+
                                 let messagePayload = {
                                     text: msgBotOnConfig.message // Default: text message
                                 };
 
-                                // ↓↓↓↓↓ INÍCIO DA LÓGICA DE ENVIO DE GIF/MP4/PNG/JPG INSERIDA ↓↓↓↓↓
-                                try {
-                                    // Tenta acessar o arquivo de mídia
-                                    await fs.access(mediaPath); 
-                                    const mediaBuffer = await fs.readFile(mediaPath);
-                                    const ext = path.extname(mediaPath).toLowerCase();
-                                    const isGif = ext === '.gif';
-                                    const isMp4 = ext === '.mp4';
-                                    const isJpg = ext === '.jpg' || ext === '.jpeg';
-                                    const isPng = ext === '.png';
+                                if (mediaPath) { 
+                                    try {
+                                        const mediaBuffer = await fsPromises.readFile(mediaPath);
+                                        const ext = path.extname(mediaPath).toLowerCase();
+                                        const isGif = ext === '.gif';
+                                        const isMp4 = ext === '.mp4';
+                                        const isJpg = ext === '.jpg' || ext === '.jpeg';
+                                        const isPng = ext === '.png';
 
-                                    if (isMp4 || isGif || isJpg || isPng) {
-                                        
-                                        // Payload para Vídeo/GIF
-                                        if (isMp4 || isGif) {
-                                            messagePayload = {
-                                                video: mediaBuffer,
-                                                caption: msgBotOnConfig.message,
-                                                mimetype: 'video/mp4', 
-                                                gifPlayback: isGif 
-                                            };
-                                        } 
-                                        
-                                        // Payload para Imagem (JPG/PNG)
-                                        else if (isJpg || isPng) {
-                                            messagePayload = {
-                                                image: mediaBuffer,
-                                                caption: msgBotOnConfig.message,
-                                                mimetype: isJpg ? 'image/jpeg' : 'image/png',
-                                            };
+                                        if (isMp4 || isGif || isJpg || isPng) {
+                                            
+                                            // Payload para Vídeo/GIF
+                                            if (isMp4 || isGif) {
+                                                messagePayload = {
+                                                    video: mediaBuffer,
+                                                    caption: msgBotOnConfig.message,
+                                                    mimetype: 'video/mp4', 
+                                                    gifPlayback: true // <-- MUDANÇA: FORÇA SEMPRE TRUE PARA GARANTIR O LOOP
+                                                };
+                                            } 
+                                            
+                                            // Payload para Imagem (JPG/PNG)
+                                            else if (isJpg || isPng) {
+                                                messagePayload = {
+                                                    image: mediaBuffer,
+                                                    caption: msgBotOnConfig.message,
+                                                    mimetype: isJpg ? 'image/jpeg' : 'image/png',
+                                                };
+                                            }
                                         }
 
-                                        console.log(`ℹ️ Preparando para enviar mídia de boas-vindas: ${isGif ? 'GIF' : isMp4 ? 'MP4' : 'IMAGEM'} (Caminho: ${mediaPath})`);
-                                    } else {
-                                        console.warn(`⚠️ O arquivo de boas-vindas existe, mas não é MP4, GIF, JPG ou PNG (${ext}). Enviando apenas texto.`);
+                                    } catch (mediaError) {
+                                        // Ignora se o arquivo não existe
                                     }
-
-                                } catch (mediaError) {
-                                    // Pega erro de fs.access (arquivo não existe) ou fs.readFile
-                                    console.warn(`⚠️ Arquivo de mídia de boas-vindas não encontrado ou inacessível em ${mediaPath}. Enviando apenas texto. Erro: ${mediaError.code || mediaError.message}`);
                                 }
-                                // ↑↑↑↑↑ FIM DA LÓGICA DE ENVIO DE GIF/MP4/PNG/JPG INSERIDA ↑↑↑↑↑
+                                // ↑↑↑↑↑ FIM DA MODIFICAÇÃO DE BUSCA DINÂMICA E FORÇANDO gifPlayback (BOT ON) ↑↑↑↑↑
                                 
                                 await NazunaSock.sendMessage(ownerJid, messagePayload);
                                 console.log(`✅ Mensagem de inicialização ${messagePayload.video || messagePayload.image ? 'com mídia' : ''} enviada para o dono`);
@@ -1324,7 +1342,7 @@ async function createBotSocket(authDir) {
                 setTimeout(() => {
                     reconnectAttempts = 0; // Reset ao reconectar por desconexão normal
                     startNazu();
-                }, reconnectDelay);
+                }, delay);
             }
         });
         return NazunaSock;

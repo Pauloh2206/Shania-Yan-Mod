@@ -1,3 +1,4 @@
+import { setMaintenanceStatus } from './utils/ownerManagement.js';
 import { autoWarnUser } from './utils/autoWarn.js';
 import { 
     downloadYoutubeMp4_480p 
@@ -196,14 +197,77 @@ import {
 
 // ===============================================
 // FUNÇÕES AUXILIARES NO ESCOPO GLOBAL
-// ===============================================
+// ========================================
 
 // 1. getBotJID (Necessária para checkBotAdmin e case 'carta')
 function getBotJID(client) { 
     return client.user.id.split(':')[0] + '@s.whatsapp.net';
 }
 
-// 2. toJid (Com a correção para aceitar vários formatos de número)
+// --- FUNÇÃO AUXILIAR PARA OBTER GRUPOS ---
+// --- FUNÇÃO AUXILIAR PARA OBTER GRUPOS ---
+/**
+ * Busca e retorna uma lista de IDs de todos os grupos dos quais o bot é participante.
+ * Implementa try/catch para lidar com falhas de conexão durante a busca.
+ * @param {object} nazu - A instância da conexão do seu bot (WA bot instance).
+ * @returns {Array<object>} Uma lista de objetos com a chave 'id' (o JID do grupo), ou um array vazio em caso de erro.
+ */
+async function getBotGroups(nazu) {
+    try {
+        // 🚨 LÓGICA DE BUSCA DE GRUPOS 🚨
+        // Esta é a forma padrão para muitos bots baseados em whatsapp/baileys.
+        // Se você usa outra forma de buscar grupos, substitua apenas estas duas linhas:
+        const allChats = await nazu.groupFetchAllParticipating();
+        const groupIds = Object.keys(allChats).map(key => allChats[key].id);
+        
+        return groupIds.map(id => ({ id }));
+
+    } catch (error) {
+        // 💥 CORREÇÃO (SOLUÇÃO 2): Tratamento de Erro de Conexão 💥
+        console.error("Erro ao tentar buscar lista de grupos (Conexão Instável):", error.message);
+        
+        // Retorna um array vazio para que a função chamadora (sendReturnNotice)
+        // possa prosseguir sem quebrar o bot, apenas pulando o envio.
+        return []; 
+    }
+}
+// ------------------------------------------
+
+// --- Função Auxiliar: Envia aviso de retorno aos grupos (sendReturnNotice) ---
+/**
+ * Envia um aviso de retorno de operação para todos os grupos ativos.
+ * Inclui verificação de estado da conexão antes de iniciar o envio.
+ * @param {object} nazu - A instância da conexão do seu bot.
+ * @param {function} reply - Função de resposta para o Dono.
+ */
+async function sendReturnNotice(nazu, reply) {
+    const returnMessage = "🤖 *FIM DA MANUTENÇÃO!* 🥳\n\nEstou de volta e 100% funcional. Obrigada pela paciência!";
+    if (nazu.ws.readyState !== nazu.ws.OPEN) {
+        return reply("❌ Falha ao enviar aviso de retorno: O bot não está conectado ao WhatsApp no momento. Tente novamente em 30 segundos.");
+    }
+    // --------------------------------------------------------------------------
+
+    try {
+        const activeGroups = await getBotGroups(nazu); 
+        
+        if (activeGroups.length === 0) {
+             return reply("⚠️ Aviso de retorno não enviado: Não foi possível obter uma lista de grupos ativos ou a lista está vazia.");
+        }
+
+        for (const group of activeGroups) {
+            await nazu.sendMessage(group.id, { text: returnMessage });
+            // Pequeno delay obrigatório para evitar flood e banimento
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+        }
+        reply(`✅ Aviso de retorno enviado para ${activeGroups.length} grupos.`);
+    } catch (e) {
+        // Bloco try/catch já existente que agora é mais uma medida de segurança
+        console.error("Erro ao enviar aviso de retorno aos grupos:", e);
+        reply("❌ Aviso de retorno finalizado com erro na comunicação (provavelmente desconexão durante o envio em massa).");
+    }
+}
+// ------------------------------------------------------------------
+
 function toJid(number) {
     if (!number) return null;
     const cleanedId = number.replace(/[^0-9@.]/g, ''); 
@@ -651,7 +715,10 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
                     isBotSender;
     
     const isOwnerOrSub = isOwner || isSubOwner;
+   
+    // ----------------------------------
     
+// ... aqui segue o seu switch (command) ...
     // Debug: log das verificações de permissão
     debugLog('Verificações de permissão:', { 
       sender: sender?.substring(0, 30), 
@@ -3164,10 +3231,7 @@ Código: *${roleCode}*`,
         }
       }
     }
-   // ... (após a lógica onde você define 'isCmd', 'isGroup', etc.)
-
-    // VERIFICAÇÃO ADICIONAL: Garante que haja um comando após o prefixo.
-    // 'command' é o comando principal sem o prefixo (ex: 'play').
+  if (isCmd && (!command || command.length === 0)) { return; } 
     const isCmdValid = isCmd && command.length > 0; 
     
     if (isCmdValid && isGroup) { 
@@ -3193,7 +3257,6 @@ Código: *${roleCode}*`,
     
     // AQUI CONTINUA COM O 'cmdlimitar', etc.
 // ...
-
 
     if (isCmd && !['cmdlimitar', 'cmdlimit', 'limitarcmd', 'cmddeslimitar', 'cmdremovelimit', 'rmcmdlimit', 'cmdlimites', 'cmdlimits', 'listcmdlimites'].includes(command)) {
       const globalLimitCheck = checkCommandLimit(command, sender);
@@ -3224,6 +3287,15 @@ Entre em contato com o dono do bot:
       }
     }
 
+const isMaintenanceMode = !!config.maintenanceMode; 
+
+if (isMaintenanceMode && !isOwner) {
+    const maintenanceMsg = "🚧 *BOT EM MANUTENÇÃO* 🚧\n\nEstou temporariamente fora do ar. Por favor, aguarde até que o Dono finalize a manutenção. Tentarei responder em breve!";
+    
+    return reply(maintenanceMsg);
+}
+
+// -----------------------------------------------------------
     switch (command) {
       
       case 'roles':
@@ -11306,6 +11378,64 @@ case 'ownermenu':
           await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes, por favor! 🥺");
         }
         break;
+        
+        case 'fotobv':
+case 'videobv':
+case 'midiabv':
+case 'midibv':
+    try {
+        if (!isOwner) return reply("🚫 Este comando é apenas para o meu Dono.");
+
+        const menuDir = pathz.join(__dirname, '..', 'midias');
+        const bvPathBase = pathz.join(menuDir, 'welcome_bot');
+
+        ['.gif', '.mp4', '.jpg', '.jpeg', '.png'].forEach(ext => {
+            const filePath = `${bvPathBase}${ext}`;
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        });
+
+        var RSM = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        
+        var boij2 = RSM?.imageMessage || info.message?.imageMessage || 
+                    RSM?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessageV2?.message?.imageMessage || 
+                    info.message?.viewOnceMessage?.message?.imageMessage || RSM?.viewOnceMessage?.message?.imageMessage;
+        
+        var boij = RSM?.videoMessage || info.message?.videoMessage || 
+                   RSM?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessageV2?.message?.videoMessage || 
+                   info.message?.viewOnceMessage?.message?.videoMessage || RSM?.viewOnceMessage?.message?.videoMessage;
+        
+        if (!boij && !boij2) {
+            return reply(`🖼️ Marque uma imagem, GIF ou vídeo, com o comando: ${prefix + command}`);
+        }
+
+        const isVideoBv = !!boij;
+        const messageToDownload = isVideoBv ? boij : boij2;
+        
+        let mimeType = messageToDownload.mimetype;
+        let fileExtension = '';
+        
+        if (mimeType.includes('image')) {
+            fileExtension = mimeType.includes('gif') ? '.gif' : mimeType.includes('png') ? '.png' : '.jpg';
+        } else if (mimeType.includes('video')) {
+            fileExtension = mimeType.includes('gif') ? '.gif' : '.mp4';
+        } else {
+             fileExtension = isVideoBv ? '.mp4' : '.jpg';
+        }
+
+        const buffer = await getFileBuffer(messageToDownload, isVideoBv ? 'video' : 'image');
+        
+        const newFilePath = `${bvPathBase}${fileExtension}`;
+        fs.writeFileSync(newFilePath, buffer);
+        
+        await reply(`✅ Mídia de Boas-Vindas atualizada com sucesso para *${fileExtension.toUpperCase().replace('.', '')}*.\n\n⚠️ Lembre-se que o arquivo de boas-vindas do bot agora é o: ${pathz.basename(newFilePath)}`);
+    } catch (e) {
+        console.error("Erro ao definir mídia de boas-vindas:", e);
+        reply("❌ Ocorreu um erro ao processar a mídia.");
+    }
+    break;
+        
       case 'fotomenu':
       case 'videomenu':
       case 'mediamenu':
@@ -12802,52 +12932,7 @@ case 'rankuserclean':
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
-      case 'iastatus':
-      case 'apikeyinfo':
-      case 'statusia':
-        if (!isOwnerOrSub) return reply("🚫 Apenas donos e subdonos podem verificar o status da API key!");
-        try {
-          const apiStatus = ia.getApiKeyStatus();
-          const historicoStats = ia.getHistoricoStats();
           
-          let statusEmoji = '✅';
-          let statusText = 'Válida e funcionando';
-          let statusColor = '🟢';
-          
-          if (!apiStatus.isValid) {
-            statusEmoji = '❌';
-            statusText = 'Inválida ou com problemas';
-            statusColor = '🔴';
-          }
-          
-          const lastCheckTime = new Date(apiStatus.lastCheck).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-          const keyPreview = KeyCog ? `${KeyCog.substring(0, 8)}...` : 'Não configurada';
-          
-          const statusMessage = [
-            "╭───🔑 STATUS API COGNIMA ───╮",
-            `┊ ${statusColor} Status: ${statusEmoji} ${statusText}`,
-            `┊ 🗝️ Key: ${keyPreview}`,
-            `┊ 🕐 Última verificação: ${lastCheckTime}`,
-            apiStatus.lastError ? `┊ ⚠️ Último erro: ${apiStatus.lastError}` : '',
-            `┊ 📧 Notificação enviada: ${apiStatus.notificationSent ? 'Sim' : 'Não'}`,
-            "┊",
-            "┊ 📊 *Estatísticas do Assistente:*",
-            `┊ • 💬 Conversas ativas: ${historicoStats.conversasAtivas}`,
-            `┊ • 📈 Total conversas: ${historicoStats.totalConversas}`,
-            `┊ • 💭 Total mensagens: ${historicoStats.totalMensagens}`,
-            "┊",
-            "┊ 🛠️ *Comandos úteis:*",
-            `┊ • ${prefix}iarecovery - Forçar reset da API`,
-            `┊ • ${prefix}iaclear - Limpar histórico antigo`,
-            "╰─────────────────╯"
-          ].filter(line => line !== '').join('\n');
-          
-          await reply(statusMessage);
-        } catch (e) {
-          console.error("Erro em iastatus:", e);
-          await reply("❌ Erro ao verificar status da API key.");
-        }
-        break;      
       case 'iaclear':
       case 'limparhist':
         if (!isOwnerOrSub) return reply("🚫 Apenas donos e subdonos podem limpar o histórico!");
@@ -13635,7 +13720,56 @@ ${mensagemBruta}
         }
         break;
         
-// ... (restante dos cases)
+case 'manutencao':
+case 'maintenance':
+        if (!isOwner) return reply("🚫 Comando exclusivo para Donos.");
+
+        const mode = q?.trim()?.toLowerCase();
+        
+        if (!mode) {
+            return reply(`📝 *Comando de Manutenção:*\n\nUse:\n${prefix}manutencao on / ativar (liga a manutenção)\n${prefix}manutencao off / desativar (desliga e avisa grupos)`);
+        }
+        
+        let newStatus = false;
+        let finalMessage = "";
+
+        const currentConfig = config; 
+        const wasMaintenanceOn = !!currentConfig.maintenanceMode;
+
+        if (mode === 'on' || mode === 'ativar') {
+            newStatus = true;
+            
+            if (wasMaintenanceOn) {
+                return reply("⚠️ O MODO DE MANUTENÇÃO já está *ATIVADO*!");
+            }
+            
+            finalMessage = "🛠️ MODO DE MANUTENÇÃO ATIVADO! Nenhuma função será processada até que seja desativado.";
+        
+        } else if (mode === 'off' || mode === 'desativar') {
+            newStatus = false;
+            
+            if (!wasMaintenanceOn) {
+                return reply("✅ O MODO DE MANUTENÇÃO já está *DESATIVADO*!");
+            }
+
+            finalMessage = "✅ MODO DE MANUTENÇÃO DESATIVADO. O bot está novamente em operação.";
+        
+        } else {
+            return reply(`❌ Modo inválido. Use '${prefix}manutencao on' ou '${prefix}manutencao off'.`);
+        }
+        
+        const result = await setMaintenanceStatus(newStatus);
+
+        if (result.success) {
+            await reply(finalMessage);
+            
+            if (!newStatus && wasMaintenanceOn) {
+                await sendReturnNotice(nazu, reply); 
+            }
+        } else {
+            await reply(result.message);
+        }
+        break;
 
       case 'qc': {
   try {
@@ -13988,7 +14122,7 @@ case 'roubar':
     let author = "";
     let pack = "";
     if (!q) {
-      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Hiudy`);
+      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Paulo`);
     }
     if (q.includes("/")) {
       author = q.split("/")[0] || "";
@@ -13998,7 +14132,7 @@ case 'roubar':
       author = "";
     }
     if (!pack) {
-      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Hiudy`);
+      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Paulo`);
     }
   const filePath = pathz.join(USERS_DIR, 'take.json');
     const dataTake = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : {};
@@ -15414,44 +15548,7 @@ Exemplos:
           reply("💥 Erro ao tentar remover fantasmas.");
         }
         break;
-      case 'fotobv':
-      case 'welcomeimg':
-        {
-          if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-          if (!isGroupAdmin) return reply("você precisa ser adm 💔");
-          if (!isQuotedImage && !isImage) return reply(`❌ Marque uma imagem ou envie uma imagem com o comando.`);
-          try {
-            if (isQuotedImage || isImage) {
-              const imgMessage = isQuotedImage ? info.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage : info.message.imageMessage;
-              const media = await getFileBuffer(imgMessage, 'image');
-              const uploadResult = await upload(media);
-              if (!uploadResult) throw new Error('Falha ao fazer upload da imagem');
-              if (!groupData.welcome) {
-                
-                groupData.welcome = {};
-              }
-              
-              groupData.welcome.image = uploadResult;
-                writeJsonFile(buildGroupFilePath(from), groupData);
-              await reply('✅ Foto de boas-vindas configurada com sucesso!');
-            } else if (q.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'banner') {
-              if (!groupData.welcome) {
-                
-                groupData.welcome = {};
-              }
-              
-                groupData.welcome.image = 'banner';
-                writeJsonFile(buildGroupFilePath(from), groupData);
-              await reply('✅ Foto de boas-vindas configurada com sucesso!');
-            } else {
-              await reply(`❌ Marque uma imagem ou envie uma imagem com o comando.`);
-            }
-          } catch (error) {
-            console.error(error);
-            reply("ocorreu um erro 💔");
-          }
-        }
-        break;
+      
       case 'fotosaida':
       case 'fotosaiu':
       case 'imgsaiu':

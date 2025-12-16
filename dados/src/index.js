@@ -293,6 +293,7 @@ async function checkBotAdmin(nazu, groupId) {
     }
 }
 // ===============================================
+global.maintenanceCooldown = global.maintenanceCooldown || new Map();
 
 const AVATAR_FALLBACK_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem_up/refs/heads/main/4.png';
 const __filename = fileURLToPath(import.meta.url);
@@ -3287,14 +3288,32 @@ Entre em contato com o dono do bot:
       }
     }
 
-const isMaintenanceMode = !!config.maintenanceMode; 
+const COOLDOWN_DURATION = 30 * 1000;
+const maintenanceMsg = "🚧 *BOT EM MANUTENÇÃO* 🚧\n\nEstou temporariamente fora do ar. Por favor, aguarde até que o Dono finalize a manutenção. Tentarei responder em breve!";
 
-if (isMaintenanceMode && !isOwner) {
-    const maintenanceMsg = "🚧 *BOT EM MANUTENÇÃO* 🚧\n\nEstou temporariamente fora do ar. Por favor, aguarde até que o Dono finalize a manutenção. Tentarei responder em breve!";
-    
-    return reply(maintenanceMsg);
+// --- FILTRO ANTI-AUTO-RESPOSTA ---
+if (budy2 && budy2.trim() === maintenanceMsg.trim()) {
+    return;
 }
+// ----------------------------------
 
+// --- BLOQUEIO DE MODO MANUTENÇÃO COM COOLDOWN ---
+const isMaintenanceMode = !!config.maintenanceMode;
+
+if (isMaintenanceMode && !isOwner && isCmd) {
+    const now = Date.now();
+    const lastSentTime = global.maintenanceCooldown.get(from) || 0;
+
+    if (now - lastSentTime < COOLDOWN_DURATION) {
+        return;
+    }
+
+    await reply(maintenanceMsg);
+
+    global.maintenanceCooldown.set(from, now);
+
+    return;
+}
 // -----------------------------------------------------------
     switch (command) {
       

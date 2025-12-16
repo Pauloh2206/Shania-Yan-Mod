@@ -1333,7 +1333,7 @@ async function createBotSocket(authDir) {
                 setTimeout(() => {
                     reconnectAttempts = 0; // Reset ao reconectar por desconexão normal
                     startNazu();
-                }, delay);
+                }, reconnectDelay); // <--- CORREÇÃO APLICADA AQUI
             }
         });
         return NazunaSock;

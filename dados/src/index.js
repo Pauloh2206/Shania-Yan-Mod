@@ -10549,8 +10549,7 @@ case 'playvid':
         
 case 'play':
 case 'ytmp3':
-case 'musica':
-    if (!isOwner && !isSubOwner) return reply("_Apenas meu dono e subs tem permissão para usar essa função_ 🍥");
+case 'musica':    
     let filePath = null;
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });

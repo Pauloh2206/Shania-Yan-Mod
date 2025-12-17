@@ -1,17 +1,21 @@
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import fs from 'fs';
-import pathz from 'path';
 
-const execPromise = promisify(exec);
-
-export const downloadMp3V2 = async (url, outputPath, bitrate = '128k') => {
-    try {
-        // O parâmetro --audio-quality define o bitrate (ex: 128k, 192k, 320k)
-        const command = `yt-dlp --no-warnings --no-check-certificate -f "ba" -x --audio-format mp3 --audio-quality ${bitrate} --max-filesize 50M -o "${outputPath}" "${url}"`;
-        await execPromise(command);
-        return outputPath;
-    } catch (error) {
-        throw error;
-    }
-};
+export async function downloadMp3V2(url, outputPath, bitrate) {
+    return new Promise((resolve, reject) => {
+        // Explicação das novas flags de velocidade:
+        // --no-playlist: Ignora processamento de listas (ganha 1-2 segundos)
+        // --no-check-certificate: Pula verificações de segurança (ganha tempo de conexão)
+        // -f "ba": Escolhe o melhor áudio disponível instantaneamente
+        // -acodec libmp3lame: Codec ultra-otimizado
+        const command = `yt-dlp --no-playlist --no-check-certificate -f "ba" -o - "${url}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab ${bitrate} -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
+        
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[ERRO]: ${stderr}`);
+                return reject(error);
+            }
+            resolve(outputPath);
+        });
+    });
+}

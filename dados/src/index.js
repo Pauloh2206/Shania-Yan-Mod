@@ -10602,7 +10602,7 @@ case 'playvid':
   
         case 'play2':
 case 'musica2': {
-    if (!isOwner && !isSubOwner) return reply("❌ Apenas o Dono/Sub-Dono.");
+    if (!isOwner) return reply("❌ Apenas o Dono/Sub-Dono.");
     if (!q) return reply(`🎵 *YOUTUBE PLAYER (V2)* 🎵\n\n📝 Digite o nome da música.`);
 
     try {

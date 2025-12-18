@@ -10652,80 +10652,63 @@ case 'musica2': {
 }
 case 'play':
 case 'ytmp3':
-case 'musica':    
+case 'musica': {
     let filePath = null;
     try {
+        // Reação inicial para mostrar que o bot recebeu o comando
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
 
         if (!q) {
-            await nazu.sendMessage(from, { react: { text: '', key: info.key } }); 
-            return reply(`🎵 *YOUTUBE PLAYER* 🎵\n\n📝 Digite o nome da música.\n\n*Exemplo:* ${prefix}play Shania Yan Attack on Titan`);
+            await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
+            return reply(`🎵 Digite o nome da música após o comando.`);
         }
 
-        await reply(`🔍 _Buscando música e informações de_ *"${q}"*...`);
+        // Busca apenas os dados internamente, sem enviar mensagem de texto
         const videoInfo = await getVideoMetadata(q);
 
         if (videoInfo.seconds > 1800) { 
             await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
-            return reply(`⚠️ Este vídeo é muito longo (${videoInfo.duration}).\nPor favor, escolha um vídeo com menos de 30 minutos para evitar timeout.`);
+            return reply(`⚠️ Muito longo! Máximo 30 min.`);
         }
 
-        const caption = `
-🎵 *Música Encontrada* 🎵
-
-👨‍💻 *Dev:* wa.me/5516981532586
-📌 *Título:* ${videoInfo.title}
-👤 *Canal:* ${videoInfo.author}
-⏱ *Duração:* ${videoInfo.duration}
-👀 *Visualizações:* ${videoInfo.views}
-🔗 *Link:* ${videoInfo.url}
-
-🎧 _*Baixando e processando o áudio em qualidade (96kbps), aguarde...*_`;
-
-        await nazu.sendMessage(from, {
-            image: { url: videoInfo.thumbnail },
-            caption: caption.trim(),
-            footer: `${nomebot} • Versão ${botVersion}`
-        }, { quoted: info }).catch(err => {
-            console.warn("Erro ao enviar thumbnail. Prosseguindo com o download.", err.message);
-        });
-        
+        // Faz o download silenciosamente
         filePath = await downloadYoutubeMp3(videoInfo.id, videoInfo.title); 
 
         if (filePath) {
+            // Envia apenas o áudio com o card visual integrado
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
                 mimetype: 'audio/mpeg',
-                ptt: false
+                ptt: false,
+                contextInfo: {
+                    externalAdReply: {
+                        title: videoInfo.title,
+                        body: `Canal: ${videoInfo.author}`,
+                        thumbnailUrl: videoInfo.thumbnail,
+                        mediaType: 1,
+                        renderLargerThumbnail: true,
+                        sourceUrl: videoInfo.url,
+                        showAdAttribution: false
+                    }
+                }
             }, { quoted: info });
             
+            // Reação de concluído
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
         } else {
-             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+             throw new Error("Erro no download");
         }
         
     } catch (error) {
-        console.error('Erro no comando play/musica (bloco principal):', error);
-
+        console.error('Erro no comando musica:', error);
         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-
-        if (String(error.message).includes('yt-dlp')) {
-             return reply("❌ Ferramenta *'yt-dlp'* não encontrada. Instale no Termux:\n`pkg install python ffmpeg -y`\n`pip install yt-dlp`");
-        }
-        
-        reply(`❌ Falha ao processar a música: ${error.message}`);
-        
     } finally {
         if (filePath && fs.existsSync(filePath)) {
-            try {
-                 fs.unlinkSync(filePath);
-            } catch (cleanupError) {
-                 console.error('Erro ao limpar arquivo temporário:', cleanupError);
-            }
+            try { fs.unlinkSync(filePath); } catch (e) {}
         }
     }
     break;
-
+}
       case 'letra':
       case 'lyrics':
         try {

@@ -3232,51 +3232,54 @@ Entre em contato com o dono do bot:
         return;
       }
     }
- // LÓGICA DE CAPTURA COM BITRATE E VELOCIDADE TURBO
+// LÓGICA DE CAPTURA COM BITRATE (VERSÃO LITE - SEM CAPA)
 if (global.waitPlay2 && global.waitPlay2[from]) {
     const dados = global.waitPlay2[from];
     const remetenteAtual = info.sender || info.key.participant || info.key.remoteJid;
 
-    // Verifica se é a mesma pessoa e se escolheu de 1 a 4
-    if (remetenteAtual === dados.usuarioId && ['1', '2', '3', '4'].includes(budy2)) {
+    // Verifica se é a mesma pessoa e se escolheu de 1 a 5
+    if (remetenteAtual === dados.usuarioId && ['1', '2', '3', '4', '5'].includes(budy2)) {
         const escolha = budy2;
-        const bits = { "1": "64k", "2": "128k", "3": "192k", "4": "320k" };
+        // Mapeamento com a nova opção 5 (96k)
+        const bits = { "1": "64k", "2": "128k", "3": "192k", "4": "320k", "5": "96k" };
         const bitrate = bits[escolha]; 
         
-        delete global.waitPlay2[from]; // Limpa para não repetir
+        delete global.waitPlay2[from]; // Limpa para evitar loops
 
         if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
         const tempPath = pathz.join(process.cwd(), 'temp', `v2_${Date.now()}.mp3`);
 
-        // Feedback visual imediato
+        // Apenas o react para indicar processamento
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
-        await reply(`_🎧 Baixando áudio em ${bitrate}_...`);
         
         try {
-            // Chama a função turbo do youtube_v2.js
+            // Executa o download usando a sua função turbo
             await downloadMp3V2(dados.url, tempPath, bitrate);
             
             if (fs.existsSync(tempPath)) {
+                // Envio simples do áudio (Sem contextInfo/capa)
                 await nazu.sendMessage(from, { 
                     audio: { url: tempPath }, 
-                    mimetype: 'audio/mp4',
+                    mimetype: 'audio/mpeg',
+                    ptt: false,
                     fileName: `${dados.titulo}.mp3`
                 }, { quoted: info });
                 
                 await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
             } else {
-                reply("❌ Erro: O arquivo não foi gerado pelo sistema.");
+                reply("❌ Erro: Arquivo não encontrado.");
             }
         } catch (e) {
-            console.error("Erro Play2:", e);
-            reply(`❌ Erro no processamento: ${e.message}`);
+            console.error("Erro Play2 Lite:", e);
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            reply(`❌ Falha: ${e.message}`);
         } finally {
             // Limpeza do arquivo temporário
-            setTimeout(() => { 
-                if (fs.existsSync(tempPath)) try { fs.unlinkSync(tempPath); } catch(e){} 
-            }, 15000);
+            if (fs.existsSync(tempPath)) {
+                try { fs.unlinkSync(tempPath); } catch(e){}
+            }
         }
-        return; // Importante para não tentar rodar outros comandos
+        return; 
     }
 }
 // -----------------------------------------------------------
@@ -10611,34 +10614,41 @@ case 'musica2': {
 
     try {
         const yts = (await import('yt-search')).default;
+        
+        // Apenas o react de busca
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
-        await reply("_Buscando informações, aguarde..._");
         
         const search = await yts(q);
         const video = search.videos[0];
         if (!video) return reply("❌ Não encontrei resultados.");
 
+        // Menu formatado apenas com texto (sem imagem)
         const menuQualidade = `🎵 *SELEÇÃO DE QUALIDADE* 🎵\n\n` +
             `📌 *Música:* ${video.title}\n` + 
-            `⏱️ *Duração:* ${video.timestamp}\n` +
-            `🔗 *Link:* ${video.url}\n\n` +
+            `⏱️ *Duração:* ${video.timestamp}\n\n` +
             `Escolha a qualidade respondendo com o número:\n\n` +
-            `1️⃣ *64kbps* (*Recomendado* ✅)\n` +
+            `1️⃣ *64kbps* (Recomendado ✅)\n` +
             `2️⃣ *128kbps* (Padrão)\n` +
             `3️⃣ *192kbps* (Alta Qualidade)\n` +
-            `4️⃣ *320kbps* (Qualidade Máxima)\n\n` +
-            `⏳ _Você tem *2 minutos* para escolher antes que esta solicitação expire._`; // Linha adicionada
+            `4️⃣ *320kbps* (Qualidade Máxima)\n` +
+            `5️⃣ *96kbps* (*Para IOS/iPhone*)\n\n` +
+            `⏳ _Você tem *2 minutos* para escolher antes que esta solicitação expire._`;
 
+        // Envia apenas a mensagem de texto
         await nazu.sendMessage(from, { text: menuQualidade }, { quoted: info });
 
-        // Salva os dados e quem pediu (bloqueio silencioso)
+        // Inicializa o objeto global de espera
+        if (!global.waitPlay2) global.waitPlay2 = {};
+
+        // Salva os dados para o coletor processar
         global.waitPlay2[from] = {
             url: video.url,
             titulo: video.title,
+            thumbnail: video.thumbnail, // Guardamos caso queira usar no áudio depois
             usuarioId: info.sender || info.key.participant || info.key.remoteJid
         };
 
-        // Timer de 2 minutos para limpar a memória
+        // Timer de 2 minutos para limpeza de memória
         setTimeout(() => {
             if (global.waitPlay2[from] && global.waitPlay2[from].url === video.url) {
                 delete global.waitPlay2[from];
@@ -10646,7 +10656,8 @@ case 'musica2': {
         }, 120000); 
 
     } catch (error) {
-        reply(`❌ Erro: ${error.message}`);
+        console.error("Erro Play2 Lite:", error);
+        reply(`❌ Erro ao buscar informações.`);
     }
     break;
 }

@@ -10,8 +10,11 @@ if (!fs.existsSync(TEMP_FOLDER)) {
     fs.mkdirSync(TEMP_FOLDER, { recursive: true });
 }
 
+/**
+ * BUSCA DE METADADOS (Original que você enviou)
+ * Garante que a busca seja precisa e retorne a música correta.
+ */
 export async function getVideoMetadata(query) {
-    // Busca rápida usando ytsearch1
     const command = `yt-dlp --dump-json "ytsearch1:${query}" --no-playlist --restrict-filenames`;
 
     try {
@@ -36,28 +39,27 @@ export async function getVideoMetadata(query) {
     }
 }
 
-export async function downloadYoutubeMp3(videoId, title) {
+/**
+ * DOWNLOAD ULTRA RÁPIDO (Sem conversão FFmpeg)
+ * Baixa o áudio nativo M4A, evitando que o bot trave ou demore convertendo.
+ */
+export async function downloadYoutubeM4A_Fast(videoUrl) {
     try {
         const timestamp = Date.now();
-        // Usamos o ID do vídeo no nome para evitar erros de caracteres especiais
-        const outputTemplate = path.join(TEMP_FOLDER, `${timestamp}_${videoId}.%(ext)s`);
+        const fileName = path.join(TEMP_FOLDER, `${timestamp}_audio.m4a`);
 
-        // -f "ba/b" foca apenas no melhor áudio, acelerando muito o início do download
-        const command = `yt-dlp "https://www.youtube.com/watch?v=${videoId}" -f "ba/b" -x --audio-format mp3 --audio-quality 96K --output "${outputTemplate}" --restrict-filenames`;
+        // Baixa o melhor áudio disponível em formato M4A pronto para envio
+        const command = `yt-dlp -f "bestaudio[ext=m4a]" --output "${fileName}" --restrict-filenames "${videoUrl}"`;
 
         await execPromise(command);
 
-        const files = fs.readdirSync(TEMP_FOLDER);
-        const downloadedFile = files.find(file => file.startsWith(`${timestamp}_${videoId}`) && file.endsWith('.mp3'));
-
-        if (!downloadedFile) {
-            throw new Error('Arquivo MP3 não encontrado.');
+        if (!fs.existsSync(fileName)) {
+            throw new Error('Arquivo não encontrado após o download.');
         }
 
-        return path.join(TEMP_FOLDER, downloadedFile);
-
+        return fileName;
     } catch (error) {
-        console.error("Erro no download de MP3:", error);
-        throw new Error('Falha ao baixar e converter a música.');
+        console.error("Erro no download de áudio:", error);
+        throw new Error('Falha ao baixar a música no modo rápido.');
     }
 }

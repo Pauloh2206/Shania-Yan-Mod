@@ -2,7 +2,7 @@ import { downloadMp3V2 } from './utils/youtube_v2.js';
 import { autoWarnUser } from './utils/autoWarn.js';
 import { downloadYoutubeMp4_Fast } from './utils/youtubeVideo.js';
 import Jimp from 'jimp';
-import { downloadYoutubeMp3, getVideoMetadata } from './utils/youtube.js';
+import { downloadYoutubeM4A_Fast, getVideoMetadata } from './utils/youtube.js';
 import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
 import makeWASocket from 'whaileys';
@@ -10645,7 +10645,6 @@ case 'ytmp3':
 case 'musica': {
     let filePath = null;
     try {
-        // Reação inicial para mostrar que o bot recebeu o comando
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
 
         if (!q) {
@@ -10653,7 +10652,6 @@ case 'musica': {
             return reply(`🎵 Digite o nome da música após o comando.`);
         }
 
-        // Busca apenas os dados internamente, sem enviar mensagem de texto
         const videoInfo = await getVideoMetadata(q);
 
         if (videoInfo.seconds > 1800) { 
@@ -10661,14 +10659,30 @@ case 'musica': {
             return reply(`⚠️ Muito longo! Máximo 30 min.`);
         }
 
-        // Faz o download silenciosamente
-        filePath = await downloadYoutubeMp3(videoInfo.id, videoInfo.title); 
+        // 1. Mensagem de texto com CARD GRANDE (Banner igual ao que você tinha)
+        await nazu.sendMessage(from, { 
+            text: `⚡ *Iniciando envio:* ${videoInfo.title}`,
+            contextInfo: {
+                externalAdReply: {
+                    title: videoInfo.title,
+                    body: `Canal: ${videoInfo.author}`,
+                    thumbnailUrl: videoInfo.thumbnail,
+                    mediaType: 1,
+                    renderLargerThumbnail: true, // Mantém o banner grande
+                    sourceUrl: videoInfo.url,
+                    showAdAttribution: false
+                }
+            }
+        }, { quoted: info });
+
+        // 2. Download Fast (M4A) - Muito mais rápido que o seu original
+        filePath = await downloadYoutubeM4A_Fast(videoInfo.url); 
 
         if (filePath) {
-            // Envia apenas o áudio com o card visual integrado
+            // 3. Envio do áudio com o card também (Estilo original)
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
-                mimetype: 'audio/mpeg',
+                mimetype: 'audio/mp4', // M4A é enviado como audio/mp4 para ser rápido
                 ptt: false,
                 contextInfo: {
                     externalAdReply: {
@@ -10676,14 +10690,13 @@ case 'musica': {
                         body: `Canal: ${videoInfo.author}`,
                         thumbnailUrl: videoInfo.thumbnail,
                         mediaType: 1,
-                        renderLargerThumbnail: true,
+                        renderLargerThumbnail: true, // Card grande no áudio também
                         sourceUrl: videoInfo.url,
                         showAdAttribution: false
                     }
                 }
             }, { quoted: info });
             
-            // Reação de concluído
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
         } else {
              throw new Error("Erro no download");

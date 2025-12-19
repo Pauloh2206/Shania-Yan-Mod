@@ -1,3 +1,4 @@
+import { getQuizIA } from './utils/quiz.js';
 import { downloadMp3V2 } from './utils/youtube_v2.js';
 import { autoWarnUser } from './utils/autoWarn.js';
 import { downloadYoutubeMp4_Fast } from './utils/youtubeVideo.js';
@@ -211,7 +212,21 @@ function toJid(number) {
     }
     return `${cleanedId}@s.whatsapp.net`; 
 }
+const rankingFile = './dados/ranking_duelo.json';
 
+// Garante que o arquivo de ranking existe
+if (!fs.existsSync('./dados')) fs.mkdirSync('./dados', { recursive: true });
+if (!fs.existsSync(rankingFile)) fs.writeFileSync(rankingFile, JSON.stringify({}, null, 2));
+
+const duelos = {}; // Memória dos duelos ativos
+
+// Função para salvar vitórias
+function salvarVitoria(idUsuario) {
+    let rank = JSON.parse(fs.readFileSync(rankingFile));
+    const id = idUsuario.split('@')[0];
+    rank[id] = (rank[id] || 0) + 1;
+    fs.writeFileSync(rankingFile, JSON.stringify(rank, null, 2));
+}
 // 3. checkBotAdmin (Necessária para case 'fuidevasco' e usa getBotJID)
 async function checkBotAdmin(nazu, groupId) {
     try {
@@ -234,7 +249,6 @@ const AVATAR_FALLBACK_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathz.dirname(__filename);
 const OWNER_ONLY_MESSAGE = '🚫 Este comando é apenas para o dono do bot!';
-
 const writeJsonFile = (filePath, data) => {
   try {
     ensureDirectoryExists(pathz.dirname(filePath));
@@ -3278,6 +3292,128 @@ if (global.waitPlay2 && global.waitPlay2[from]) {
             }
         }
         return; 
+    }
+}
+// --- SISTEMA DE DUELO: MARATONA 15 RODADAS COM TIMER ---
+const dueloAtivo = duelos[from];
+const msgLimpa = body ? body.trim().toLowerCase() : "";
+
+if (dueloAtivo) {
+    const numSender = sender.replace(/\D/g, '').slice(-8);
+    const numP1 = dueloAtivo.p1.replace(/\D/g, '').slice(-8);
+    const numP2 = dueloAtivo.p2.replace(/\D/g, '').slice(-8);
+
+    // FUNÇÃO PARA LIMPAR O TIMER ANTERIOR
+    const limparTimer = () => {
+        if (dueloAtivo.timer) {
+            clearTimeout(dueloAtivo.timer);
+            dueloAtivo.timer = null;
+        }
+    };
+
+    // --- AÇÃO NOVO: ENCERRAR DUELO ---
+    // Permite que qualquer um dos dois jogadores pare o jogo digitando "encerrar"
+    if (msgLimpa === 'encerrar' && (numSender === numP1 || numSender === numP2)) {
+        limparTimer();
+        delete duelos[from];
+        return nazu.sendMessage(from, { text: "🏳️ *O duelo foi encerrado por um dos jogadores.*" });
+    }
+
+    // FUNÇÃO PARA GERAR PRÓXIMA PERGUNTA
+    const proximaRodada = async () => {
+        limparTimer(); 
+        dueloAtivo.respondeuNaRodada = [];
+
+        if (dueloAtivo.rodadaAtual >= dueloAtivo.maxRodadas) {
+            const empate = dueloAtivo.placar.p1 === dueloAtivo.placar.p2;
+            if (empate) {
+                const txt = `🏁 *FIM DA MARATONA!* 🏁\n\n🤝 Resultado: **EMPATE** (${dueloAtivo.placar.p1} x ${dueloAtivo.placar.p2})`;
+                delete duelos[from];
+                return nazu.sendMessage(from, { text: txt });
+            }
+            const vFinal = dueloAtivo.placar.p1 > dueloAtivo.placar.p2 ? dueloAtivo.p1 : dueloAtivo.p2;
+            salvarVitoria(vFinal);
+            const resFinal = `🏁 *FIM DA MARATONA!* 🏁\n\n🏆 CAMPEÃO: @${vFinal.split('@')[0]}\n📈 PLACAR: ${dueloAtivo.placar.p1} vs ${dueloAtivo.placar.p2}\n🏅 _Vitória salva no #rankduelo!_`;
+            delete duelos[from];
+            return nazu.sendMessage(from, { text: resFinal, mentions: [vFinal] });
+        } else {
+            dueloAtivo.rodadaAtual++;
+            dueloAtivo.status = 'preparando';
+            
+            setTimeout(async () => {
+                const quiz = await getQuizIA();
+                if (duelos[from]) {
+                    dueloAtivo.perguntaAtual = quiz;
+                    dueloAtivo.status = 'em_andamento';
+                    dueloAtivo.startTime = Date.now();
+                    
+                    let txt = `📝 *RODADA ${dueloAtivo.rodadaAtual}/${dueloAtivo.maxRodadas}*\n📊 Placar: P1 [${dueloAtivo.placar.p1}] - [${dueloAtivo.placar.p2}] P2\n\n`;
+                    txt += `🤔 *Pergunta:* ${quiz.pergunta}\n\n${quiz.opcoes.join('\n')}\n\n`;
+                    txt += `⏱️ *Você tem 50 segundos!*`;
+
+                    await nazu.sendMessage(from, { text: txt, mentions: [dueloAtivo.p1, dueloAtivo.p2] });
+
+                    // DISPARA O TIMER DE 50 SEGUNDOS
+                    dueloAtivo.timer = setTimeout(async () => {
+                        if (duelos[from] && dueloAtivo.status === 'em_andamento') {
+                            await nazu.sendMessage(from, { text: `⏰ *TEMPO ESGOTADO!*\nA resposta correta era: *${quiz.correta}*` });
+                            proximaRodada();
+                        }
+                    }, 50000);
+                }
+            }, 4000);
+        }
+    };
+
+    // AÇÃO: ACEITAR
+    if (dueloAtivo.status === 'esperando_aceite' && numSender === numP2 && msgLimpa === 'aceitar') {
+        dueloAtivo.status = 'preparando';
+        await nazu.sendMessage(from, { text: "⏳ *Maratona Iniciada! Preparando 1ª pergunta...*" });
+        const quiz = await getQuizIA();
+        if (!quiz) { delete duelos[from]; return reply("❌ Erro ao gerar quiz."); }
+        
+        dueloAtivo.perguntaAtual = quiz;
+        dueloAtivo.status = 'em_andamento';
+        dueloAtivo.startTime = Date.now();
+        
+        let txt = `📝 *RODADA 1/15*\n\n🤔 *Pergunta:* ${quiz.pergunta}\n\n${quiz.opcoes.join('\n')}\n\n⏱️ *Tempo: 50 segundos!*`;
+        await nazu.sendMessage(from, { text: txt, mentions: [dueloAtivo.p1, dueloAtivo.p2] });
+
+        // TIMER DA PRIMEIRA PERGUNTA
+        dueloAtivo.timer = setTimeout(async () => {
+            if (duelos[from] && dueloAtivo.status === 'em_andamento') {
+                await nazu.sendMessage(from, { text: `⏰ *TEMPO ESGOTADO!*\nA resposta correta era: *${quiz.correta}*` });
+                proximaRodada();
+            }
+        }, 50000);
+        return;
+    }
+
+    // AÇÃO: RESPOSTAS
+    if (dueloAtivo.status === 'em_andamento' && (numSender === numP1 || numSender === numP2)) {
+        const resp = body.trim().toUpperCase();
+        if (['A', 'B', 'C', 'D'].includes(resp)) {
+            if (!dueloAtivo.respondeuNaRodada) dueloAtivo.respondeuNaRodada = [];
+            if (dueloAtivo.respondeuNaRodada.includes(numSender)) return; 
+
+            const correta = dueloAtivo.perguntaAtual.correta.trim().toUpperCase();
+            if (resp === correta) {
+                limparTimer(); // PARA O CRONÔMETRO IMEDIATAMENTE
+                if (numSender === numP1) dueloAtivo.placar.p1++; else dueloAtivo.placar.p2++;
+                await nazu.sendMessage(from, { text: `✅ @${sender.split('@')[0]} acertou!`, mentions: [sender] });
+                await proximaRodada();
+            } else {
+                dueloAtivo.respondeuNaRodada.push(numSender);
+                if (dueloAtivo.respondeuNaRodada.length >= 2) {
+                    limparTimer(); // PARA O CRONÔMETRO
+                    await nazu.sendMessage(from, { text: `❌ Ambos erraram! A correta era: *${correta}*` });
+                    await proximaRodada();
+                } else {
+                    reply("❌ Errada! Você só tem uma chance por rodada.");
+                }
+            }
+            return;
+        }
     }
 }
 // -----------------------------------------------------------
@@ -6779,7 +6915,7 @@ if (global.waitPlay2 && global.waitPlay2[from]) {
       }
       // Aceitar convite de clã
       case 'aceitarconvite':
-      case 'aceitar': {
+      case 'aceitarct': {
         if (!isGroup) return reply('⚔️ Comandos de clã só funcionam em grupos com Modo RPG.');
         if (!groupData.modorpg) return reply(`⚔️ Modo RPG desativado! Use ${prefix}modorpg para ativar.`);
 
@@ -13733,6 +13869,92 @@ ${mensagemBruta}
             reply("Ocorreu um erro ao tentar configurar a função Auto-Warn.");
         }
         break;        
+
+case 'encerrarduelo':
+case 'pararduelo': {
+    const dueloAtivo = duelos[from];
+    if (!dueloAtivo) return reply("⚠️ Não há nenhum duelo rolando neste grupo.");
+    
+    const numSender = sender.replace(/\D/g, '').slice(-8);
+    const numP1 = dueloAtivo.p1.replace(/\D/g, '').slice(-8);
+    const numP2 = dueloAtivo.p2.replace(/\D/g, '').slice(-8);
+
+    if (numSender === numP1 || numSender === numP2 || isGroupAdmins) {
+        if (dueloAtivo.timer) clearTimeout(dueloAtivo.timer);
+        delete duelos[from];
+        return reply("🏁 O duelo foi encerrado com sucesso.");
+    } else {
+        return reply("❌ Apenas os jogadores ou um ADM podem encerrar este duelo.");
+    }
+}
+
+case 'dueloquiz': {
+    const p1 = sender;
+    const p2 = info.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+    
+    if (!p2) return reply("⚠️ Marque alguém para duelar! Ex: *#dueloquiz @usuario*");
+    if (p2 === p1) return reply("❌ Você não pode duelar com você mesmo.");
+    if (duelos[from]) return reply("⚠️ Já existe um duelo rolando neste grupo!");
+
+    // Inicializa o duelo com todas as novas propriedades: timer, placar e rodadas
+    duelos[from] = {
+        p1: p1,
+        p2: p2,
+        status: 'esperando_aceite',
+        placar: { p1: 0, p2: 0 },
+        rodadaAtual: 1,
+        maxRodadas: 15,
+        respondeuNaRodada: [],
+        timer: null // Onde o cronômetro de 50s será guardado
+    };
+
+    await nazu.sendMessage(from, { 
+        text: `⚔️ *MARATONA DE CONHECIMENTOS GERAIS* ⚔️\n\n@${p1.split('@')[0]} 🆚 @${p2.split('@')[0]}\n\n📋 *Regras:*\n• 15 perguntas de nível geral.\n• 50 segundos para responder.\n• Apenas 1 chance por pessoa por rodada.\n\nO desafiado deve digitar *aceitar* para começar!`,
+        mentions: [p1, p2]
+    });
+
+    // O convite expira em 60 segundos se ninguém aceitar
+    setTimeout(() => {
+        if (duelos[from] && duelos[from].status === 'esperando_aceite') {
+            delete duelos[from];
+            nazu.sendMessage(from, { text: "⏰ O tempo para aceitar o desafio expirou." });
+        }
+    }, 60000);
+    break;
+}
+
+case 'rankduelo': {
+    // Verifica se o arquivo existe antes de tentar ler
+    if (!fs.existsSync(rankingFile)) {
+        return reply("📑 O ranking ainda está vazio! Vença uma maratona para aparecer aqui.");
+    }
+
+    try {
+        const rank = JSON.parse(fs.readFileSync(rankingFile));
+        // Transforma em array, ordena do maior para o menor e pega o Top 10
+        const lista = Object.entries(rank)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+
+        if (lista.length === 0) return reply("📑 Ranking vazio.");
+
+        let txt = `🏅 *TOP 10 MESTRES DO QUIZ* 🏅\n\n`;
+        lista.forEach((u, i) => {
+            txt += `${i + 1}º - @${u[0]}: *${u[1]}* vitórias\n`;
+        });
+        
+        txt += `\n_Vença maratonas de 15 rodadas para subir no rank!_`;
+
+        nazu.sendMessage(from, { 
+            text: txt, 
+            mentions: lista.map(u => u[0] + '@s.whatsapp.net') 
+        });
+    } catch (e) {
+        console.error("Erro ao ler ranking:", e);
+        reply("❌ Erro ao processar o ranking.");
+    }
+    break;
+}
 
       case 'qc': {
   try {

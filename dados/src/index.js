@@ -1,8 +1,6 @@
 import { downloadMp3V2 } from './utils/youtube_v2.js';
 import { autoWarnUser } from './utils/autoWarn.js';
-import { 
-    downloadYoutubeMp4_480p 
-} from './utils/youtubeVideo.js';
+import { downloadYoutubeMp4_Fast } from './utils/youtubeVideo.js';
 import Jimp from 'jimp';
 import { downloadYoutubeMp3, getVideoMetadata } from './utils/youtube.js';
 import 'dotenv/config';
@@ -10522,92 +10520,73 @@ if (global.waitPlay2 && global.waitPlay2[from]) {
         
         case 'ytmp4':
 case 'playvid':
+case 'video': {
     let videoFilePath = null;
-    
-    // 1. Validação de Permissões
-    if (!isOwner) {
-         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-         return reply("_Apenas meu dono tem permissão para usar essa função_ 🍥");
-    }
+    if (!isOwner || !q) return; 
 
     try {
-        await nazu.sendMessage(from, { react: { text: '🎬', key: info.key } });
+        await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
 
-        if (!q) {
-            await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
-            return reply(`🎬 *DOWNLOAD DE VÍDEO* 🎬\n\n📝 Digite o nome do vídeo.\n\n*Exemplo:* ${prefix}ytmp4 trailer novo`);
-        }
+        const yts = (await import('yt-search')).default;
+        const search = await yts(q);
         
-        const query = q.substring(0, 150);
-        await reply(`🔍 _Buscando metadados de_ *"${query}"*...`);
-        const videoInfo = await getVideoMetadata(query);
+        // Filtro para pegar o primeiro VÍDEO (pula lives que bugam o card)
+        const videoInfo = search.videos.find(v => v.type === 'video'); 
 
-        // 2. Validação de Duração (Limite sugerido: 5 minutos / 300 segundos)
-        if (videoInfo.seconds > 300) { 
-            await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
-            return reply(`⚠️ Este vídeo é muito longo (${videoInfo.duration}).\nPor favor, escolha um vídeo com menos de 5 minutos (300 segundos) para evitar falhas no envio.`);
-        }
-
-        // 3. Enviar Informações
-        const caption = `
-🎥 *Vídeo Encontrado (baixando)* 🎥
-
-👨‍💻 *Dev:* wa.me/5516981532586
-📌 *Título:* ${videoInfo.title}
-👤 *Canal:* ${videoInfo.author}
-⏱ *Duração:* ${videoInfo.duration}
-🔗 *Link:* ${videoInfo.url}
-
-📥 _*Baixando vídeo, aguarde...*_`;
+        if (!videoInfo) return reply("❌ Nenhum vídeo encontrado.");
         
-        await nazu.sendMessage(from, {
-            image: { url: videoInfo.thumbnail },
-            caption: caption.trim(),
-            footer: `${nomebot} • Versão ${botVersion}`
+        // Novo limite de segurança (100MB costuma ter uns 15-20 min em modo Fast)
+        if (videoInfo.seconds > 1200) return reply("⚠️ Vídeo muito longo (máx 20 min).");
+
+        // Card minimalista corrigido
+        await nazu.sendMessage(from, { 
+            text: `⚡ *Iniciando envio:* ${videoInfo.title}`,
+            contextInfo: {
+                externalAdReply: {
+                    title: videoInfo.title,
+                    body: `Tamanho estimado: ~${(videoInfo.seconds * 0.15).toFixed(1)}MB`,
+                    mediaType: 1,
+                    thumbnailUrl: videoInfo.thumbnail,
+                    sourceUrl: videoInfo.url,
+                    renderLargerThumbnail: false
+                }
+            }
         }, { quoted: info });
-        
-        await nazu.sendMessage(from, { react: { text: '⬇️', key: info.key } });
 
-        // 4. DOWNLOAD E ENVIO (Usando a função de 480p)
-        videoFilePath = await downloadYoutubeMp4_480p(videoInfo.id, videoInfo.title); 
+        await nazu.sendMessage(from, { react: { text: '📥', key: info.key } });
 
-        if (videoFilePath) {
+        // Download Modo Fast (mais leve para o sistema)
+        videoFilePath = await downloadYoutubeMp4_Fast(videoInfo.url); 
+
+        if (videoFilePath && fs.existsSync(videoFilePath)) {
+            await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
+
+            // ENVIO OTIMIZADO PARA ARQUIVOS GRANDES
             await nazu.sendMessage(from, { 
-                video: { url: videoFilePath }, 
+                video: { url: videoFilePath }, // Usa URL/Caminho em vez de Buffer para não crashar a RAM
                 mimetype: 'video/mp4',
-                caption: `Aqui está o vídeo: ${videoInfo.title}`,
-            }, { quoted: info });
+                caption: `✅ *${videoInfo.title}*`
+            }, { 
+                quoted: info,
+                uploadtimeout: 1000 * 60 * 5 // 5 minutos de tolerância para o upload
+            });
             
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
-        } else {
-             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-             reply(`❌ Falha no download do vídeo.`);
         }
         
     } catch (error) {
-        console.error('Erro no comando ytmp4/video:', error);
-        
-        // Tratamento de erro yt-dlp
-        if (String(error.message).includes('yt-dlp')) {
-             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-             return reply("❌ Ferramenta *'yt-dlp'* não encontrada. Instale no Termux.");
+        console.error('ERRO NO VIDEO:', error);
+        // Se o erro for de timeout, avisamos
+        if (error.message.includes('timeout')) {
+            reply("❌ O upload demorou demais e a conexão caiu. Tente um vídeo menor ou melhore o sinal.");
         }
-        
-        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-        reply(`❌ Falha ao processar o vídeo: ${error.message.substring(0, 100)}...`);
-        
     } finally {
-        // --- LIMPEZA ---
         if (videoFilePath && fs.existsSync(videoFilePath)) {
-            try {
-                 fs.unlinkSync(videoFilePath);
-            } catch (cleanupError) {
-                 console.error('Erro ao limpar arquivo temporário:', cleanupError);
-            }
+            try { fs.unlinkSync(videoFilePath); } catch (e) {}
         }
     }
     break;
-  
+}
         case 'play2':
 case 'musica2': {    
     if (!q) return reply(`🎵 *YOUTUBE PLAYER (V2)* 🎵\n\n📝 Digite o nome da música.`);
@@ -10631,7 +10610,7 @@ case 'musica2': {
             `2️⃣ *128kbps* (Padrão)\n` +
             `3️⃣ *192kbps* (Alta Qualidade)\n` +
             `4️⃣ *320kbps* (Qualidade Máxima)\n` +
-            `5️⃣ *96kbps* (*Para IOS/iPhone*)\n\n` +
+            `5️⃣ *96kbps* (*Para iPhone*)\n\n` +
             `⏳ _Você tem *2 minutos* para escolher antes que esta solicitação expire._`;
 
         // Envia apenas a mensagem de texto

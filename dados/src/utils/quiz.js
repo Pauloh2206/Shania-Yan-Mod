@@ -1,78 +1,41 @@
-import axios from 'axios';
+import { GoogleGenAI } from '@google/genai';
 
 /**
- * Função para limpar caracteres estranhos que vêm da API (HTML Entities)
+ * Busca uma pergunta completa na Gemini 2.5 Flash
  */
-function limparTexto(text) {
-    return text
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&deg;/g, "°");
-}
-
-/**
- * Traduz o texto usando a API livre do Google
- */
-async function traduzirSimples(text) {
+export async function getQuizIA(apiKey) {
     try {
-        const url = 'https://translate.googleapis.com/translate_a/single';
-        const response = await axios.get(url, {
-            params: { client: 'gtx', sl: 'en', tl: 'pt', dt: 't', q: text }
+        const GEMINI_API_KEY = apiKey || process.env.GEMINI_API_KEY;
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
+
+        const prompt = `Gere uma pergunta de conhecimentos gerais sobre o Brasil para quiz nível médio.
+        REGRAS:
+        1. Gere 4 alternativas (A, B, C, D).
+        2. Retorne APENAS um JSON puro neste formato:
+        {
+          "pergunta": "Texto da pergunta?",
+          "opcoes": ["A) Opção 1", "B) Opção 2", "C) Opção 3", "D) Opção 4"],
+          "correta": "LETRA"
+        }`;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
-        return limparTexto(response.data[0][0][0]);
-    } catch (e) {
-        return limparTexto(text); // Se falhar a tradução, retorna o original limpo
-    }
-}
-
-/**
- * Busca uma pergunta na Open Trivia DB e traduz para PT-BR
- */
-export async function getQuizIA() {
-    try {
-        // Busca pergunta de conhecimentos gerais (Fácil/Médio) na API gringa
-        const response = await axios.get('https://opentdb.com/api.php?amount=1&type=multiple&difficulty=easy');
-        const data = response.data;
         
-        if (data.response_code !== 0) return null;
+        const texto = response.text;
+        const jsonMatch = texto.match(/\{[\s\S]*\}/);
 
-        const raw = data.results[0];
-        
-        // Organiza as opções e sorteia a posição (Shuffling)
-        const incorretas = raw.incorrect_answers;
-        const corretaOriginal = raw.correct_answer;
-        const todasOpcoes = [...incorretas, corretaOriginal].sort(() => Math.random() - 0.5);
-
-        // Traduz a Pergunta
-        const perguntaPt = await traduzirSimples(raw.question);
-        
-        // Traduz cada opção individualmente
-        const opcoesPt = [];
-        const letras = ['A', 'B', 'C', 'D'];
-        let letraCorreta = 'A';
-
-        for (let i = 0; i < todasOpcoes.length; i++) {
-            const traduzida = await traduzirSimples(todasOpcoes[i]);
-            const opcaoFormatada = `${letras[i]}) ${traduzida}`;
-            opcoesPt.push(opcaoFormatada);
-            
-            // Verifica qual letra ficou com a resposta certa
-            if (todasOpcoes[i] === corretaOriginal) {
-                letraCorreta = letras[i];
-            }
+        if (jsonMatch) {
+            const res = JSON.parse(jsonMatch[0]);
+            return {
+                pergunta: res.pergunta,
+                opcoes: res.opcoes,
+                correta: res.correta.toUpperCase().trim()
+            };
         }
-
-        return {
-            pergunta: perguntaPt,
-            opcoes: opcoesPt,
-            correta: letraCorreta
-        };
-
     } catch (e) {
-        console.error("Erro no processamento do Quiz:", e);
+        console.error("Erro crítico no Quiz Gemini:", e.message);
         return null;
     }
 }

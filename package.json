@@ -1,6 +1,6 @@
 {
  "name": "Shania-Yan-Bot",
- "version": "31",
+ "version": "32",
  "description": "Bot de whatsapp modificado por Paulo (criador base hiudy)",
  "type": "module",
  "main": "dados/src/connect.js",
@@ -20,6 +20,7 @@
  "license": "ISC",
  "dependencies": {
   "@google/genai": "^1.31.0",
+  "@google/generative-ai": "^0.21.0",
   "@hapi/boom": "^10.0.1",
   "axios": "^1.13.2",
   "dotenv": "^17.2.3",

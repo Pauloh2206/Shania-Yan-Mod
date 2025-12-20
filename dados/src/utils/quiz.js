@@ -1,14 +1,16 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
- * Busca uma pergunta completa na Gemini 2.5 Flash
+ * Busca uma pergunta completa na Gemini 2.5 Flash usando a biblioteca oficial
  */
 export async function getQuizIA(apiKey) {
     try {
         const GEMINI_API_KEY = apiKey || process.env.GEMINI_API_KEY;
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
+        
+        // Inicialização padrão da biblioteca @google/generative-ai
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY); 
 
-        const prompt = `Gere uma pergunta de conhecimentos gerais sobre o Brasil para quiz nível médio.
+        const prompt = `Gere uma pergunta de conhecimentos gerais especificamente sobre o BRASIL para quiz nível médio.
         REGRAS:
         1. Gere 4 alternativas (A, B, C, D).
         2. Retorne APENAS um JSON puro neste formato:
@@ -18,12 +20,13 @@ export async function getQuizIA(apiKey) {
           "correta": "LETRA"
         }`;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-        });
+        // Definindo o modelo 2.5 Flash
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
-        const texto = response.text;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const texto = response.text(); // Na biblioteca oficial, usa-se o método text()
+        
         const jsonMatch = texto.match(/\{[\s\S]*\}/);
 
         if (jsonMatch) {

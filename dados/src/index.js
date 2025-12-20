@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getForcaIA, renderForca } from './utils/forca.js';
 import { getQuizIA } from './utils/quiz.js';
 import { downloadMp3V2 } from './utils/youtube_v2.js';

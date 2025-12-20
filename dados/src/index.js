@@ -1,3 +1,4 @@
+import { getForcaIA, renderForca } from './utils/forca.js';
 import { getQuizIA } from './utils/quiz.js';
 import { downloadMp3V2 } from './utils/youtube_v2.js';
 import { autoWarnUser } from './utils/autoWarn.js';
@@ -219,7 +220,7 @@ if (!fs.existsSync('./dados')) fs.mkdirSync('./dados', { recursive: true });
 if (!fs.existsSync(rankingFile)) fs.writeFileSync(rankingFile, JSON.stringify({}, null, 2));
 
 const duelos = {}; // Memória dos duelos ativos
-
+const forcas = {};
 // Função para salvar vitórias
 function salvarVitoria(idUsuario) {
     let rank = JSON.parse(fs.readFileSync(rankingFile));
@@ -3413,6 +3414,158 @@ if (dueloAtivo) {
                 }
             }
             return;
+        }
+    }
+}
+// --- OUVINTE DA MARATONA DE FORCA (6 RODADAS) ---
+const msgPura = body.toLowerCase().trim();
+
+if (forcas[from]) {
+    const jogo = forcas[from];
+    const usuario = sender;
+    const jogadoresValidos = [jogo.desafiante, jogo.desafiado];
+
+    // A. LÓGICA DE CONVITE (ACEITAR/RECUSAR)
+    if (jogo.status === 'convidado') {
+        if (msgPura === 'aceitar' && usuario === jogo.desafiado) {
+            clearTimeout(jogo.timer);
+            const dados = await getForcaIA(process.env.GEMINI_API_KEY, []);
+            Object.assign(jogo, {
+                status: 'jogando',
+                palavra: dados.palavra.toUpperCase(),
+                tema: dados.tema,
+                progresso: Array(dados.palavra.length).fill("_"),
+                erros: [], tentativas: 6, rodada: 1,
+                vitorias: { [jogo.desafiante]: 0, [jogo.desafiado]: 0 },
+                participantes: {}, usadas: [dados.palavra.toUpperCase()]
+            });
+            return reply(`🎮 *MARATONA INICIADA! (1/6)*\n\n🎨 *Tema:* ${jogo.tema}\n📝 ${jogo.progresso.join(' ')}\n\n⚠️ Chances resetam quando AMBOS jogarem 2 vezes.`);
+        }
+        if (msgPura === 'recusar' && jogadoresValidos.includes(usuario)) {
+            clearTimeout(jogo.timer);
+            delete forcas[from];
+            return reply("❌ Desafio cancelado.");
+        }
+    }
+
+    // B. LÓGICA DO JOGO ATIVO
+    else if (jogo.status === 'jogando') {
+        const input = body.toUpperCase().trim();
+        if (!jogadoresValidos.includes(usuario)) return;
+
+        const letrasFaltando = jogo.progresso.filter(l => l === "_").length;
+        let finalizouRodada = false;
+
+        // 1. XEQUE-MATE (Obrigatório Palavra inteira quando falta pouco)
+        if (letrasFaltando <= 4 && input.length > 1) {
+            if (input === jogo.palavra) {
+                jogo.progresso = jogo.palavra.split("");
+                jogo.vitorias[usuario]++; 
+                finalizouRodada = true;
+            } else {
+                jogo.tentativas = 0; 
+                finalizouRodada = true;
+            }
+        } 
+        // 2. MECÂNICA DE LETRAS
+        else if (input.length === 1 && /^[A-Z]$/.test(input)) {
+            if (!jogo.participantes[usuario]) jogo.participantes[usuario] = 0;
+
+            // Bloqueio de Ciclo (Aguarda o oponente)
+            if (jogo.participantes[usuario] >= 2) {
+                const outro = jogadoresValidos.find(u => u !== usuario);
+                if ((jogo.participantes[outro] || 0) < 2) {
+                    return nazu.sendMessage(from, { 
+                        text: `⚠️ @${usuario.split('@')[0]}, aguarde @${outro.split('@')[0]} jogar para resetar suas chances.`, 
+                        mentions: [usuario, outro] 
+                    });
+                }
+            }
+
+            if (jogo.progresso.includes(input) || jogo.erros.includes(input)) return;
+            jogo.participantes[usuario]++;
+
+            if (jogo.palavra.includes(input)) {
+                for (let i = 0; i < jogo.palavra.length; i++) {
+                    if (jogo.palavra[i] === input) jogo.progresso[i] = input;
+                }
+                if (!jogo.progresso.includes("_")) {
+                    jogo.vitorias[usuario]++;
+                    finalizouRodada = true;
+                }
+            } else {
+                jogo.erros.push(input);
+                jogo.tentativas--;
+                if (jogo.tentativas <= 0) finalizouRodada = true;
+            }
+
+            // MANDA STATUS ANTES DO RESET (Para não "engolir" a última letra)
+            if (!finalizouRodada) {
+                const acertadas = [...new Set(jogo.progresso)].filter(l => l !== "_");
+                const ditas = [...new Set([...jogo.erros, ...acertadas])].join(", ");
+                let status = `🎮 *FORCA (${jogo.rodada}/6)*\n\`\`\`${renderForca(jogo.tentativas)}\`\`\`\n`;
+                status += `🎨 *Tema:* ${jogo.tema}\n📝 ${jogo.progresso.join(' ')}\n\n🚫 *Já ditas:* ${ditas || "Nenhuma"}\n`;
+                status += (jogo.progresso.filter(l => l === "_").length <= 4) ? `⚠️ *XEQUE-MATE!*` : `👤 Suas letras: ${jogo.participantes[usuario]}/2`;
+                
+                await nazu.sendMessage(from, { text: status, mentions: [usuario] });
+
+                // VERIFICAR RESET DE CICLO
+                const t1 = jogo.participantes[jogadoresValidos[0]] || 0;
+                const t2 = jogo.participantes[jogadoresValidos[1]] || 0;
+                if (t1 >= 2 && t2 >= 2) {
+                    jogo.participantes = {};
+                    return reply("🔄 *Ciclo completo!* Chances resetadas para ambos.");
+                }
+            }
+        }
+
+        // 3. FIM DA RODADA
+        if (finalizouRodada) {
+            const venceu = !jogo.progresso.includes("_");
+            const jidLimpo = usuario.split('@')[0];
+            let textoFim = venceu 
+                ? `🎉 Rodada finalizada! @${jidLimpo} pontuou.` 
+                : `💀 Ninguém pontuou! A palavra era *${jogo.palavra}*.`;
+
+            if (jogo.rodada < 6) {
+                jogo.rodada++;
+                await nazu.sendMessage(from, { text: `${textoFim}\n\n⏳ *Preparando rodada ${jogo.rodada}/6...*`, mentions: [usuario] });
+                
+                const novos = await getForcaIA(process.env.GEMINI_API_KEY, jogo.usadas);
+                jogo.usadas.push(novos.palavra);
+                Object.assign(jogo, {
+                    palavra: novos.palavra, tema: novos.tema,
+                    progresso: Array(novos.palavra.length).fill("_"),
+                    erros: [], tentativas: 6, participantes: {}
+                });
+                return reply(`🎮 *RODADA ${jogo.rodada}/6*\n🎨 *Tema:* ${jogo.tema}\n📝 ${jogo.progresso.join(' ')}`);
+            } 
+            // 4. FIM DA MARATONA (RODADA 6) - PRENDA FINAL
+            else {
+                const p1 = jogo.vitorias[jogo.desafiante];
+                const p2 = jogo.vitorias[jogo.desafiado];
+                let perdedorFinal = p1 < p2 ? jogo.desafiante : (p2 < p1 ? jogo.desafiado : null);
+                
+                let msgFinal = `🏁 *MARATONA FINALIZADA!*\n\n📊 *Placar Final:*\n@${jogo.desafiante.split('@')[0]}: ${p1} vitórias\n@${jogo.desafiado.split('@')[0]}: ${p2} vitórias\n\n`;
+
+                if (perdedorFinal) {
+                    try {
+                        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
+                        const response = await ai.models.generateContent({
+                            model: "gemini-2.5-flash",
+                            contents: [{ role: "user", parts: [{ text: "Gere uma tarefa prática ou mico engraçado e curto para WhatsApp (ex: enviar foto de agora, áudio cantando)." }] }],
+                        });
+                        msgFinal += `⚖️ *O GRANDE PERDEDOR É @${perdedorFinal.split('@')[0]}!*\n📝 *SUA PRENDA:* ${response.text.trim()}`;
+                    } catch {
+                        msgFinal += `⚖️ *PERDEDOR: @${perdedorFinal.split('@')[0]}!*\n📝 *PRENDA:* Envie uma foto fazendo careta agora!`;
+                    }
+                } else {
+                    msgFinal += "🤝 *EMPATE TÉCNICO!* Ninguém paga prenda.";
+                }
+
+                await nazu.sendMessage(from, { text: msgFinal, mentions: [jogo.desafiante, jogo.desafiado] });
+                delete forcas[from];
+            }
         }
     }
 }
@@ -13892,7 +14045,7 @@ case 'dueloquiz': {
     const p1 = sender;
     const p2 = info.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
     
-    if (!p2) return reply("⚠️ Marque alguém para duelar! Ex: *#dueloquiz @usuario*");
+    if (!p2) return reply("⚠️ Marque alguém para duelar! Ex: */dueloquiz @usuario*");
     if (p2 === p1) return reply("❌ Você não pode duelar com você mesmo.");
     if (duelos[from]) return reply("⚠️ Já existe um duelo rolando neste grupo!");
 
@@ -13955,6 +14108,38 @@ case 'rankduelo': {
     }
     break;
 }
+
+// --- COMANDOS DA FORCA ---
+case 'forca': {
+    const mencionado = info.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+    if (!mencionado) return reply("⚠️ Você precisa marcar alguém! Ex: /forca @usuario");
+    if (forcas[from]) return reply(`⚠️ Já existe um jogo rolando neste grupo!`);
+
+    forcas[from] = { 
+        status: 'convidado', 
+        desafiante: sender, 
+        desafiado: mencionado,
+        timer: setTimeout(() => {
+            if (forcas[from] && forcas[from].status === 'convidado') {
+                delete forcas[from];
+                nazu.sendMessage(from, { text: "⏰ *O convite expirou (2 min).* " });
+            }
+        }, 120000)
+    };
+
+    return nazu.sendMessage(from, { 
+        text: `🎮 *DESAFIO DE FORCA (6 RODADAS)*\n\n👤 *Desafiante:* @${sender.split('@')[0]}\n🎯 *Desafiado:* @${mencionado.split('@')[0]}\n\nO desafiado deve digitar *aceitar* ou *recusar*!`,
+        mentions: [sender, mencionado]
+    });
+}
+break;
+
+case 'pararforca': {
+    if (!forcas[from]) return reply("❌ Nenhum jogo ativo.");
+    delete forcas[from];
+    return reply("🛑 *MARATONA ENCERRADA!*");
+}
+break;
 
       case 'qc': {
   try {

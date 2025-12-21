@@ -13622,7 +13622,7 @@ case 'clima':
 
         // --- URL da Imagem do GitHub ---
         // SUBSTITUA ESTA URL PELA SUA IMAGEM REAL DO CLIMA
-        const CLIMA_IMAGE_URL = 'https://raw.githubusercontent.com/Pauloh2206/imagem_up/refs/heads/main/0.jpg'; 
+        const CLIMA_IMAGE_URL = 'https://files.catbox.moe/nhujhw.jpeg'; 
         // -----------------------------------
 
         const prompt = `Qual é o clima atual, temperatura, sensação térmica, umidade e condição do vento em ${cidade}? Responda de forma concisa em no máximo um parágrafo. Utilize emojis relevantes para formatar os dados. Comece a resposta com a condição climática (Ex: "Atualmente, em...") e evite frases de encerramento.`;

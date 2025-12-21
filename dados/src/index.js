@@ -13509,6 +13509,91 @@ case 'rankuserclean':
         }       
        break;
 
+case 'tourl':
+case 'upload': {
+    const socket = (typeof nazu !== 'undefined') ? nazu : (typeof conn !== 'undefined' ? conn : null);
+    
+    // 1. Busca a mídia (marcada ou enviada com o comando)
+    const quoted = info.message?.extendedTextMessage?.contextInfo?.quotedMessage || info.message;
+    
+    if (!quoted) return socket.sendMessage(info.key.remoteJid, { text: '❌ *ERRO*: Marque uma foto, vídeo, áudio ou figurinha!' }, { quoted: info });
+
+    // 2. Identifica o tipo e o mimetype
+    const type = Object.keys(quoted).find(key => key.includes('Message') && !key.includes('protocol')) || '';
+    const mediaKey = type ? quoted[type] : quoted;
+    const mime = mediaKey?.mimetype || quoted?.mimetype || '';
+
+    if (!mime) return socket.sendMessage(info.key.remoteJid, { text: '❌ *ERRO*: Não detectei nenhuma mídia válida.' }, { quoted: info });
+
+    // Reação de progresso
+    await socket.sendMessage(info.key.remoteJid, { react: { text: "☁️", key: info.key } });
+
+    try {
+        // 3. Download usando a função nativa da sua base
+        const mediaType = type.replace('Message', '').replace('stub', '') || 'image'; 
+        const mediaBuffer = await getFileBuffer(mediaKey, mediaType);
+
+        if (!mediaBuffer) return socket.sendMessage(info.key.remoteJid, { text: '❌ Erro ao baixar arquivo do WhatsApp.' }, { quoted: info });
+
+        // 4. Importação dinâmica para evitar erro de 'require'
+        const FormData = (await import('form-data')).default;
+        const axios = (await import('axios')).default;
+        
+        const fd = new FormData();
+        const extensao = mime.split('/')[1]?.split(';')[0] || 'bin';
+        const nomeArquivo = `paulo_file_${Date.now()}.${extensao}`;
+
+        // Configuração Catbox (Upload Permanente)
+        fd.append('reqtype', 'fileupload');
+        fd.append('fileToUpload', mediaBuffer, {
+            filename: nomeArquivo,
+            contentType: mime
+        });
+
+        const { data } = await axios.post('https://catbox.moe/user/api.php', fd, {
+            headers: fd.getHeaders()
+        });
+
+        if (typeof data === 'string' && data.startsWith('https')) {
+            // --- LEGENDA ESTILIZADA ---
+            let legenda = `✅ *𝗨𝗣𝗟𝗢𝗔𝗗 𝗦𝗨𝗖𝗖𝗘𝗦𝗦*\n\n`;
+            legenda += `🔗 *Link:* ${data}\n`;
+            legenda += `📄 *Tipo:* ${mime}\n`;
+            legenda += `✨ *Status:* Permanente\n\n`;
+            legenda += `*ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs*`;
+
+            // 5. ENVIO NO FORMATO DE DOCUMENTO (CARD) COM MINIATURA
+            await socket.sendMessage(info.key.remoteJid, {
+                document: mediaBuffer, 
+                mimetype: mime,
+                fileName: nomeArquivo,
+                caption: legenda,
+                // Thumbnail para aparecer a foto dentro do card
+                jpegThumbnail: (mime.includes('image') || mime.includes('sticker')) ? mediaBuffer : null,
+                contextInfo: {
+                    externalAdReply: {
+                        title: 'Arquivo na Nuvem',
+                        body: 'Clique para acessar o link',
+                        mediaType: 1,
+                        renderLargerThumbnail: false,
+                        thumbnail: (mime.includes('image')) ? mediaBuffer : null,
+                        sourceUrl: data
+                    }
+                }
+            }, { quoted: info });
+
+            await socket.sendMessage(info.key.remoteJid, { react: { text: "✅", key: info.key } });
+
+        } else {
+            await socket.sendMessage(info.key.remoteJid, { text: '❌ Erro ao subir para o Catbox.' }, { quoted: info });
+        }
+
+    } catch (err) {
+        console.error("ERRO TOURL:", err);
+        await socket.sendMessage(info.key.remoteJid, { text: '❌ Erro interno: ' + err.message }, { quoted: info });
+    }
+break;
+}
 case 'clima':
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });

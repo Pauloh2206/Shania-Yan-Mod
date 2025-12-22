@@ -10884,40 +10884,58 @@ case 'musica2': {
     try {
         const yts = (await import('yt-search')).default;
         
-        // Apenas o react de busca
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
         
         const search = await yts(q);
         const video = search.videos[0];
         if (!video) return reply("❌ Não encontrei resultados.");
 
-        // Menu formatado apenas com texto (sem imagem)
-        const menuQualidade = `🎵 *SELEÇÃO DE QUALIDADE* 🎵\n\n` +
-            `📌 *Música:* ${video.title}\n` + 
-            `⏱️ *Duração:* ${video.timestamp}\n\n` +
-            `Escolha a qualidade respondendo com o número:\n\n` +
-            `1️⃣ *64kbps* (Recomendado ✅)\n` +
-            `2️⃣ *128kbps* (Padrão)\n` +
-            `3️⃣ *192kbps* (Alta Qualidade)\n` +
-            `4️⃣ *320kbps* (Qualidade Máxima)\n` +
-            `5️⃣ *96kbps* (*Para iPhone*)\n\n` +
-            `⏳ _Você tem *2 minutos* para escolher antes que esta solicitação expire._`;
+        // Configuração das seções da lista
+        const sections = [
+            {
+                title: "QUALIDADES DISPONÍVEIS",
+                rows: [
+                    {title: "Qualidade 64kbps", rowId: "1", description: "Recomendado (Mais rápido ⚡)"},
+                    {title: "Qualidade 128kbps", rowId: "2", description: "Padrão (Equilibrado 🎧)"},
+                    {title: "Qualidade 192kbps", rowId: "3", description: "Alta Definição (✨)"},
+                    {title: "Qualidade 320kbps", rowId: "4", description: "Qualidade Máxima (🔥)"},
+                    {title: "Qualidade 96kbps", rowId: "5", description: "Otimizado para iPhone (🍎)"}
+                ]
+            }
+        ];
 
-        // Envia apenas a mensagem de texto
-        await nazu.sendMessage(from, { text: menuQualidade }, { quoted: info });
+        // Montagem da mensagem de lista
+        const listMessage = {
+            text: `🎵 *𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗨𝗦𝗜𝗖 𝗩𝟮*\n\n📌 *Música:* ${video.title}\n⏱️ *Duração:* ${video.timestamp}\n\nClique no botão abaixo para escolher a qualidade desejada.`,
+            footer: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+            title: "𝗦𝗘𝗟𝗘𝗖̧𝗔̃𝗢 𝗗𝗘 𝗔́𝗨𝗗𝗜𝗢",
+            buttonText: "Selecionar Qualidade", // Texto que fica no "botão"
+            sections,
+            contextInfo: {
+                externalAdReply: {
+                    title: video.title,
+                    body: `Canal: ${video.author.name}`,
+                    thumbnailUrl: video.thumbnail,
+                    mediaType: 1,
+                    renderLargerThumbnail: false,
+                    sourceUrl: video.url
+                }
+            }
+        };
 
-        // Inicializa o objeto global de espera
+        // Envia a lista
+        await nazu.sendMessage(from, listMessage, { quoted: info });
+
+        // Salva os dados para o seu coletor processar o rowId (1, 2, 3...)
         if (!global.waitPlay2) global.waitPlay2 = {};
-
-        // Salva os dados para o coletor processar
         global.waitPlay2[from] = {
             url: video.url,
             titulo: video.title,
-            thumbnail: video.thumbnail, // Guardamos caso queira usar no áudio depois
+            thumbnail: video.thumbnail,
+            autor: video.author.name,
             usuarioId: info.sender || info.key.participant || info.key.remoteJid
         };
 
-        // Timer de 2 minutos para limpeza de memória
         setTimeout(() => {
             if (global.waitPlay2[from] && global.waitPlay2[from].url === video.url) {
                 delete global.waitPlay2[from];
@@ -10925,10 +10943,10 @@ case 'musica2': {
         }, 120000); 
 
     } catch (error) {
-        console.error("Erro Play2 Lite:", error);
+        console.error("Erro Play2 Lista:", error);
         reply(`❌ Erro ao buscar informações.`);
     }
-    break;
+break;
 }
 case 'play':
 case 'ytmp3':

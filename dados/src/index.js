@@ -4347,7 +4347,36 @@ if (forcas[from]) {
 
       case 'menurpg':
       case 'rpg': {
-        await sendMenuWithMedia('menurpg', menuRPG);
+        try {
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuRPG(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
+        }
         break;
       }
 
@@ -11077,7 +11106,7 @@ case 'commands':
         const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
         const menuText = await menu(prefix, nomebot, pushname, customDesign);
         
-        await nazu.sendMessage(from, { react: { text: '📋', key: info.key } });
+        await nazu.sendMessage(from, { react: { text: '🍥', key: info.key } });
        
         await nazu.sendMessage(from, {
             document: mediaBuffer, // O vídeo ou foto entra como o "arquivo"
@@ -11109,20 +11138,68 @@ case 'commands':
       case 'changersmenu':
       case 'changers':
         try {
-          await sendMenuWithMedia('alteradores', menuAlterador);
-        } catch (error) {
-          console.error('Erro ao enviar menu de alteradores:', error);
-          await reply("❌ Ocorreu um erro ao carregar o menu de alteradores");
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuAlterador(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
         }
         break;
       case 'menuia':
       case 'aimenu':
       case 'menuias':
         try {
-          await sendMenuWithMedia('ia', menuIa);
-        } catch (error) {
-          console.error('Erro ao enviar menu de IA:', error);
-          await reply("❌ Ocorreu um erro ao carregar o menu de IA");
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuIa(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
         }
         break;
       case 'menubn':
@@ -11130,9 +11207,31 @@ case 'commands':
       case 'menubrincadeiras':
       case 'gamemenu':
         try {
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
           const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
-          let menuContent = await menubn(prefix, nomebot, pushname, isModoLite, customDesign);
-          await sendMenuWithMedia('brincadeiras', async () => menuContent);
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menubn(prefix, nomebot, pushname, isModoLite, customDesign); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
         } catch (error) {
           console.error('Erro ao enviar menu de brincadeiras:', error);
           await reply("❌ Ocorreu um erro ao carregar o menu de brincadeiras");
@@ -11144,10 +11243,34 @@ case 'commands':
       case 'downmenu':
       case 'downloadmenu':
         try {
-          await sendMenuWithMedia('downloads', menudown);
-        } catch (error) {
-          console.error('Erro ao enviar menu de downloads:', error);
-          await reply("❌ Ocorreu um erro ao carregar o menu de downloads");
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menudown(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
         }
         break;
       case 'ferramentas':
@@ -11156,10 +11279,34 @@ case 'commands':
       case 'toolsmenu':
       case 'tools':
         try {
-          await sendMenuWithMedia('ferramentas', menuFerramentas);
-        } catch (error) {
-          console.error('Erro ao enviar menu de ferramentas:', error);
-          await reply("❌ Ocorreu um erro ao carregar o menu de ferramentas");
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuFerramentas(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
         }
         break;
       case 'menuadm':
@@ -11167,10 +11314,34 @@ case 'commands':
       case 'menuadmins':
       case 'admmenu':
         try {
-          await sendMenuWithMedia('admin', menuadm);
-        } catch (error) {
-          console.error('Erro ao enviar menu de administração:', error);
-          await reply("❌ Ocorreu um erro ao carregar o menu de administração");
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuadm(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
         }
         break;
       case 'menumembros':
@@ -11179,10 +11350,34 @@ case 'commands':
       case 'membmenu':
       case 'membermenu':
         try {
-          await sendMenuWithMedia('membros', menuMembros);
-        } catch (error) {
-          console.error('Erro ao enviar menu de membros:', error);
-          await reply("❌ Ocorreu um erro ao carregar o menu de membros");
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuMembros(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
+        } catch (e) { 
+            console.log(e);
+            // Fallback de erro mantendo o texto
+            await reply("Erro ao carregar menu.");
         }
         break;
       case 'configcmdnotfound':
@@ -11305,7 +11500,30 @@ case 'ownermenu':
     }
     // ---------------------------------
     
-    await sendMenuWithMedia('dono', menuDono);
+    const menuImagePath = __dirname + '/../midias/menu.jpg';
+    const mediaBuffer = fs.readFileSync(menuImagePath);
+    
+    // Mantenha a variável que gera o texto original de cada case aqui
+    const menuText = await menuDono(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+    
+    await nazu.sendMessage(from, {
+        document: mediaBuffer, 
+        caption: menuText,
+        fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+        mimetype: 'application/pdf',
+        contextInfo: {
+            forwardingScore: 1,
+            isForwarded: true,
+            externalAdReply: {
+                title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                body: "666 KB • TXT",
+                mediaType: 1,
+                renderLargerThumbnail: true,
+                thumbnail: mediaBuffer,
+                sourceUrl: `https://github.com`
+            }
+        }
+    }, { quoted: info });
   } catch (error) {
     console.error('Erro ao enviar menu do dono:', error);
     await reply("❌ Ocorreu um erro ao carregar o menu do dono");
@@ -11315,7 +11533,30 @@ case 'ownermenu':
       case 'menusticker':
       case 'menufig':
         try {
-          await sendMenuWithMedia('stickers', menuSticker);
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuSticker(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname)); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
         } catch (error) {
           console.error('Erro ao enviar menu de stickers:', error);
           await reply("❌ Ocorreu um erro ao carregar o menu de stickers");
@@ -12206,10 +12447,31 @@ case 'midibv':
       case 'vip':
       case 'vipmenu':
         try {
-          await sendMenuWithMedia('vip', async () => {
-            const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
-            return await menuVIP(prefix, nomebot, pushname, customDesign);
-          });
+          const menuImagePath = __dirname + '/../midias/menu.jpg';
+          const mediaBuffer = fs.readFileSync(menuImagePath);
+          
+          const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
+          // Mantenha a variável que gera o texto original de cada case aqui
+          const menuText = await menuVIP(prefix, nomebot, pushname, customDesign); 
+          
+          await nazu.sendMessage(from, {
+              document: mediaBuffer, 
+              caption: menuText,
+              fileName: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+              mimetype: 'application/pdf',
+              contextInfo: {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  externalAdReply: {
+                      title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                      body: "666 KB • TXT",
+                      mediaType: 1,
+                      renderLargerThumbnail: true,
+                      thumbnail: mediaBuffer,
+                      sourceUrl: `https://github.com`
+                  }
+              }
+          }, { quoted: info });
         } catch (error) {
           console.error('Erro ao enviar menu VIP:', error);
           await reply(`❌ Erro ao carregar menu VIP. Use ${prefix}infovip para mais informações.`);

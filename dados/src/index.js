@@ -10883,50 +10883,14 @@ case 'musica2': {
 
     try {
         const yts = (await import('yt-search')).default;
-        
+        const isGroup = from.endsWith('@g.us'); 
+
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
         
         const search = await yts(q);
         const video = search.videos[0];
         if (!video) return reply("❌ Não encontrei resultados.");
 
-        // Configuração das seções da lista
-        const sections = [
-            {
-                title: "QUALIDADES DISPONÍVEIS",
-                rows: [
-                    {title: "Qualidade 64kbps", rowId: "1", description: "Recomendado (Mais rápido ⚡)"},
-                    {title: "Qualidade 128kbps", rowId: "2", description: "Padrão (Equilibrado 🎧)"},
-                    {title: "Qualidade 192kbps", rowId: "3", description: "Alta Definição (✨)"},
-                    {title: "Qualidade 320kbps", rowId: "4", description: "Qualidade Máxima (🔥)"},
-                    {title: "Qualidade 96kbps", rowId: "5", description: "Otimizado para iPhone (🍎)"}
-                ]
-            }
-        ];
-
-        // Montagem da mensagem de lista
-        const listMessage = {
-            text: `🎵 *𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗨𝗦𝗜𝗖 𝗩𝟮*\n\n📌 *Música:* ${video.title}\n⏱️ *Duração:* ${video.timestamp}\n\nClique no botão abaixo para escolher a qualidade desejada.`,
-            footer: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
-            title: "𝗦𝗘𝗟𝗘𝗖̧𝗔̃𝗢 𝗗𝗘 𝗔́𝗨𝗗𝗜𝗢",
-            buttonText: "Selecionar Qualidade", // Texto que fica no "botão"
-            sections,
-            contextInfo: {
-                externalAdReply: {
-                    title: video.title,
-                    body: `Canal: ${video.author.name}`,
-                    thumbnailUrl: video.thumbnail,
-                    mediaType: 1,
-                    renderLargerThumbnail: false,
-                    sourceUrl: video.url
-                }
-            }
-        };
-
-        // Envia a lista
-        await nazu.sendMessage(from, listMessage, { quoted: info });
-
-        // Salva os dados para o seu coletor processar o rowId (1, 2, 3...)
         if (!global.waitPlay2) global.waitPlay2 = {};
         global.waitPlay2[from] = {
             url: video.url,
@@ -10936,6 +10900,66 @@ case 'musica2': {
             usuarioId: info.sender || info.key.participant || info.key.remoteJid
         };
 
+        if (!isGroup) {
+            // --- MODO PV: LISTA ---
+            const sections = [{
+                title: "💎 QUALIDADES DISPONÍVEIS",
+                rows: [
+                    {title: "Qualidade 64kbps", rowId: "1", description: "Mais rápido ⚡ (Recomendado)"},
+                    {title: "Qualidade 128kbps", rowId: "2", description: "Padrão 🎧 (Equilibrado)"},
+                    {title: "Qualidade 192kbps", rowId: "3", description: "Alta Definição ✨"},
+                    {title: "Qualidade 320kbps", rowId: "4", description: "Qualidade Máxima 🔥"},
+                    {title: "Qualidade 96kbps", rowId: "5", description: "Otimizado para iPhone 🍎"}
+                ]
+            }];
+
+            await nazu.sendMessage(from, {
+                text: `🎵 *𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗨𝗦𝗜𝗖 𝗩𝟮*\n\n📌 *Música:* ${video.title}\n⏱️ *Duração:* ${video.timestamp}\n\nSelecione a qualidade no botão abaixo:`,
+                footer: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                buttonText: "Selecionar Qualidade",
+                sections,
+                contextInfo: {
+                    externalAdReply: {
+                        title: video.title,
+                        body: `Canal: ${video.author.name}`,
+                        thumbnailUrl: video.thumbnail,
+                        mediaType: 1,
+                        renderLargerThumbnail: false,
+                        sourceUrl: video.url
+                    }
+                }
+            }, { quoted: info });
+
+        } else {
+            // --- MODO GRUPO: MENU TEXTO COM TODAS AS INFORMAÇÕES ---
+            const menuTexto = `🎵 *𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗨𝗦𝗜𝗖 𝗩𝟮* 🎵\n\n` +
+                `📌 *Música:* ${video.title}\n` + 
+                `⏱️ *Duração:* ${video.timestamp}\n\n` +
+                `Responda com o número da qualidade:\n\n` +
+                `[ 1 ] ‣ *64kbps* (Recomendado ✅)\n` +
+                `[ 2 ] ‣ *128kbps* (Padrão 🎧)\n` +
+                `[ 3 ] ‣ *192kbps* (Alta Qualidade ✨)\n` +
+                `[ 4 ] ‣ *320kbps* (Qualidade Máxima 🔥)\n` +
+                `[ 5 ] ‣ *96kbps* (*Para iPhone* 🍎)\n\n` +
+                `⏳ _Sua solicitação expira em 2 minutos._\n\n` +
+                `ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs`;
+
+            await nazu.sendMessage(from, { 
+                text: menuTexto,
+                contextInfo: {
+                    externalAdReply: {
+                        title: video.title,
+                        body: `Canal: ${video.author.name}`,
+                        thumbnailUrl: video.thumbnail,
+                        mediaType: 1,
+                        renderLargerThumbnail: false,
+                        sourceUrl: video.url,
+                        showAdAttribution: true
+                    }
+                }
+            }, { quoted: info });
+        }
+
         setTimeout(() => {
             if (global.waitPlay2[from] && global.waitPlay2[from].url === video.url) {
                 delete global.waitPlay2[from];
@@ -10943,7 +10967,7 @@ case 'musica2': {
         }, 120000); 
 
     } catch (error) {
-        console.error("Erro Play2 Lista:", error);
+        console.error("Erro Play2:", error);
         reply(`❌ Erro ao buscar informações.`);
     }
 break;

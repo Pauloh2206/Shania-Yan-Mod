@@ -10949,40 +10949,40 @@ case 'musica': {
             return reply(`⚠️ Muito longo! Máximo 30 min.`);
         }
 
-        // 1. Mensagem de texto com CARD GRANDE (Banner igual ao que você tinha)
+        // 1. CARD DE PRÉVIA (ESTILO COMPACTO/OFICIAL)
         await nazu.sendMessage(from, { 
-            text: `⚡ *Iniciando envio:* ${videoInfo.title}`,
+            text: `🎧 *Buscando:* ${videoInfo.title}`,
             contextInfo: {
                 externalAdReply: {
                     title: videoInfo.title,
-                    body: `Canal: ${videoInfo.author}`,
+                    body: `YouTube Music • ${videoInfo.author}`,
                     thumbnailUrl: videoInfo.thumbnail,
-                    mediaType: 1,
-                    renderLargerThumbnail: true, // Mantém o banner grande
-                    sourceUrl: videoInfo.url,
-                    showAdAttribution: false
+                    mediaType: 2, // Ativa o modo player
+                    showAdAttribution: true, // Adiciona a etiqueta de "Verificado/Anúncio"
+                    sourceUrl: videoInfo.url
                 }
             }
         }, { quoted: info });
 
-        // 2. Download Fast (M4A) - Muito mais rápido que o seu original
+        // Download rápido (M4A)
         filePath = await downloadYoutubeM4A_Fast(videoInfo.url); 
 
         if (filePath) {
-            // 3. Envio do áudio com o card também (Estilo original)
+            // 2. ENVIO DO ÁUDIO (ESTILO SPOTIFY)
+            // Aqui removemos o 'renderLargerThumbnail' para ficar um card horizontal elegante
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
-                mimetype: 'audio/mp4', // M4A é enviado como audio/mp4 para ser rápido
+                mimetype: 'audio/mp4',
                 ptt: false,
                 contextInfo: {
                     externalAdReply: {
                         title: videoInfo.title,
-                        body: `Canal: ${videoInfo.author}`,
+                        body: videoInfo.author,
                         thumbnailUrl: videoInfo.thumbnail,
                         mediaType: 1,
-                        renderLargerThumbnail: true, // Card grande no áudio também
-                        sourceUrl: videoInfo.url,
-                        showAdAttribution: false
+                        renderLargerThumbnail: false, // Card menor ao lado do áudio
+                        showAdAttribution: false,
+                        sourceUrl: videoInfo.url
                     }
                 }
             }, { quoted: info });
@@ -11000,7 +11000,7 @@ case 'musica': {
             try { fs.unlinkSync(filePath); } catch (e) {}
         }
     }
-    break;
+break;
 }
       case 'letra':
       case 'lyrics':

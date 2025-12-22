@@ -11057,34 +11057,52 @@ break;
         break;
         
       case 'menu':
-      case 'help':
-      case 'comandos':
-      case 'commands':
-        try {
-          const menuVideoPath = __dirname + '/../midias/menu.mp4';
-          const menuImagePath = __dirname + '/../midias/menu.jpg';
-          const useVideo = fs.existsSync(menuVideoPath);
-          const mediaPath = useVideo ? menuVideoPath : menuImagePath;
-          const mediaBuffer = fs.readFileSync(mediaPath);
-          
-          const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
-          const menuText = await menu(prefix, nomebot, pushname, customDesign);
-          
-          await nazu.sendMessage(from, {
-            [useVideo ? 'video' : 'image']: mediaBuffer,
+case 'help':
+case 'comandos':
+case 'commands':
+    try {
+        // --- CONFIGURAÇÃO DO CARD (IGUAL AO PRINT) ---
+        const tituloDoc = "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs"; 
+        const corpoDoc = "666 KB • TXT"; 
+        // ----------------------------------------------
+
+        const menuImagePath = __dirname + '/../midias/menu.jpg';
+        const menuVideoPath = __dirname + '/../midias/menu.mp4';
+        
+        // Verifica se existe vídeo, se não, usa imagem
+        const useVideo = fs.existsSync(menuVideoPath);
+        const mediaPath = useVideo ? menuVideoPath : menuImagePath;
+        const mediaBuffer = fs.readFileSync(mediaPath);
+
+        const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
+        const menuText = await menu(prefix, nomebot, pushname, customDesign);
+        
+        await nazu.sendMessage(from, { react: { text: '📋', key: info.key } });
+       
+        await nazu.sendMessage(from, {
+            document: mediaBuffer, // O vídeo ou foto entra como o "arquivo"
             caption: menuText,
-            gifPlayback: useVideo,
-            mimetype: useVideo ? 'video/mp4' : 'image/jpeg'
-          }, {
-            quoted: info
-          });
-        } catch (error) {
-          console.error('Erro ao enviar menu:', error);
-          const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
-          const menuText = await menu(prefix, nomebot, pushname, customDesign);
-          await reply(`${menuText}\n\n⚠️ *Nota*: Ocorreu um erro ao carregar a mídia do menu.`);
-        }
-        break;
+            fileName: tituloDoc,
+            mimetype: 'application/pdf',
+            contextInfo: {
+                forwardingScore: 1,
+                isForwarded: true,
+                externalAdReply: {
+                    title: tituloDoc,
+                    body: corpoDoc,
+                    mediaType: 1,
+                    renderLargerThumbnail: true, // Deixa a imagem principal grande
+                    thumbnail: fs.readFileSync(menuImagePath), // Foto que aparece no card
+                    sourceUrl: `https://github.com`
+                }
+            }
+        }, { quoted: info });
+
+    } catch (error) {
+        console.error('Erro no menu:', error);
+        await reply("Erro ao carregar o menu.");
+    }
+    break;
       case 'alteradores':
       case 'menualterador':
       case 'menualteradores':
@@ -11782,10 +11800,7 @@ case 'midibv':
     }
     break;
         
-      case 'fotomenu':
-      case 'videomenu':
-      case 'mediamenu':
-      case 'midiamenu':
+      case 'fotomenu':      
         try {
           if (!isOwner) return reply("Este comando é apenas para o meu dono");
           if (fs.existsSync(__dirname + '/../midias/menu.jpg')) fs.unlinkSync(__dirname + '/../midias/menu.jpg');

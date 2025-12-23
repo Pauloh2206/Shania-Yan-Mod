@@ -14545,6 +14545,72 @@ case 'pararforca': {
 }
 break;
 
+case 'tiktok':
+case 'tk':
+    if (!args[0]) return reply(`Exemplo: ${prefix + command} https://www.tiktok.com/@user/video/...`);
+    
+    try {
+        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
+
+        // Tentativa com a API do Tikwm (Uma das mais estáveis atualmente)
+        const tikwmUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(args[0])}`;
+        const res = await fetch(tikwmUrl);
+        const json = await res.json();
+
+        if (json.code === 0 && json.data) {
+            const data = json.data;
+            const videoUrl = data.play; // Vídeo sem marca d'água
+            const title = data.title || "TikTok Video";
+            const author = data.author?.nickname || "User";
+
+            const menuImagePath = __dirname + '/../midias/menu.jpg';
+            const thumb = fs.existsSync(menuImagePath) ? fs.readFileSync(menuImagePath) : Buffer.alloc(0);
+
+            await nazu.sendMessage(from, {
+                video: { url: videoUrl },
+                caption: `✅ *TikTok Downloader*\n\n📌 *Título:* ${title}\n👤 *Autor:* ${author}`,
+                contextInfo: {
+                    externalAdReply: {
+                        title: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
+                        body: "Download Concluído • MP4",
+                        mediaType: 1,
+                        renderLargerThumbnail: false,
+                        thumbnail: thumb,
+                        sourceUrl: args[0]
+                    }
+                }
+            }, { quoted: info });
+
+            return await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+        }
+
+        // Se a Tikwm falhar, tentamos uma alternativa rápida via Cobalt (Open Source)
+        const cobaltRes = await fetch('https://api.cobalt.tools/api/json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ url: args[0], vQuality: '720' })
+        });
+        const cobaltData = await cobaltRes.json();
+
+        if (cobaltData.url) {
+            await nazu.sendMessage(from, {
+                video: { url: cobaltData.url },
+                caption: `✅ *TikTok Downloader (Mirror)*`,
+                quoted: info
+            });
+            return await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+        }
+
+        throw new Error('Todas as APIs falharam');
+
+    } catch (e) {
+        console.error('Erro no comando TikTok:', e.message);
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        // Uso o reply simples sem tentar abrir arquivos de log
+        return reply('❌ Não foi possível baixar o vídeo. O link pode estar quebrado ou a API instável.');
+    }
+break;
+
       case 'qc': {
   try {
     let texto = q && q.trim()

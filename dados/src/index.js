@@ -14579,47 +14579,56 @@ break;
 
 case 'hd': {
     try {
-        const isImageHD = type === 'imageMessage';
-        const isQuotedImageHD = type === 'extendedTextMessage' && info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+        const isImage = type === 'imageMessage' || info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+        const isVideo = type === 'videoMessage' || info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage;
 
-        if (!isImageHD && !isQuotedImageHD) return reply("❌ Marque ou envie uma imagem!");
+        if (!isImage && !isVideo) return reply("_❌ Marque ou envie uma imagem ou vídeo!_");
 
-        // Reação de emoji e mensagem curta
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
-        reply("⏳ Processando em HD...");
+        reply(`*⏳ Processando em HD...*`);
 
-        const targetMessage = isQuotedImageHD ? info.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage : info.message.imageMessage;
-        const buffer = await getFileBuffer(targetMessage, 'image');
+        const quoted = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        const targetMessage = isImage 
+            ? (quoted ? quoted.imageMessage : info.message.imageMessage)
+            : (quoted ? quoted.videoMessage : info.message.videoMessage);
 
-        if (!buffer) return reply("❌ Erro ao baixar imagem.");
+        const buffer = await getFileBuffer(targetMessage, isImage ? 'image' : 'video');
+        if (!buffer) return reply("❌ Erro ao baixar mídia.");
 
         const fs = await import('fs');
         const { exec } = await import('child_process');
 
-        const inputPath = `./input_${Date.now()}.jpg`;
-        const outputPath = `./output_${Date.now()}.jpg`;
+        const ext = isImage ? 'jpg' : 'mp4';
+        const inputPath = `./input_${Date.now()}.${ext}`;
+        const outputPath = `./output_${Date.now()}.${ext}`;
 
         fs.writeFileSync(inputPath, buffer);
 
-        // FFmpeg: Dobra o tamanho (scale) e aplica nitidez (unsharp)
-        exec(`ffmpeg -i ${inputPath} -vf "scale=iw*2:-1,unsharp=5:5:1.0:5:5:0.0" -q:v 2 ${outputPath}`, async (error) => {
+        let command;
+        if (isImage) {
+            command = `ffmpeg -i ${inputPath} -vf "scale=iw*2:-1,unsharp=5:5:1.0:5:5:0.0" -q:v 2 ${outputPath}`;
+        } else {
+            // Força o lado maior a ser 1280px para o selo HD aparecer
+            command = `ffmpeg -i ${inputPath} -vf "scale='if(gt(iw,ih),1280,-2)':'if(gt(iw,ih),-2,1280)',unsharp=3:3:0.5" -c:v libx264 -preset ultrafast -crf 20 -c:a copy ${outputPath}`;
+        }
+
+        exec(command, async (error) => {
             if (error) {
                 console.error(error);
                 if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-                return reply("❌ Erro no FFmpeg.");
+                return reply("❌ Erro ao processar HD.");
             }
 
             const finalBuffer = fs.readFileSync(outputPath);
 
-            // Envia a imagem e reage com check de sucesso
-            await nazu.sendMessage(from, {
-                image: finalBuffer,
-                caption: "✅ *HD FINALIZADO*",
-            }, { quoted: info });
+            if (isImage) {
+                await nazu.sendMessage(from, { image: finalBuffer, caption: "✅ *IMAGEM HD*" }, { quoted: info });
+            } else {
+                await nazu.sendMessage(from, { video: finalBuffer, caption: "✅ *VÍDEO HD*", mimetype: 'video/mp4' }, { quoted: info });
+            }
             
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
 
-            // Limpeza de arquivos
             setTimeout(() => {
                 if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
                 if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);

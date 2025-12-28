@@ -10808,35 +10808,7 @@ if (forcas[from]) {
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
-      case 'upload':
-      case 'imgpralink':
-      case 'videopralink':
-      case 'gerarlink':
-        try {
-          if (!isQuotedImage && !isQuotedVideo && !isQuotedDocument && !isQuotedAudio) return reply(`Marque um video, uma foto, um audio ou um documento`);
-          var foto1 = isQuotedImage ? info.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage : {};
-          var video1 = isQuotedVideo ? info.message.extendedTextMessage.contextInfo.quotedMessage.videoMessage : {};
-          var docc1 = isQuotedDocument ? info.message.extendedTextMessage.contextInfo.quotedMessage.documentMessage : {};
-          var audio1 = isQuotedAudio ? info.message.extendedTextMessage.contextInfo.quotedMessage.audioMessage : "";
-          let media = {};
-          if (isQuotedDocument) {
-            media = await getFileBuffer(docc1, "document");
-          } else if (isQuotedVideo) {
-            media = await getFileBuffer(video1, "video");
-          } else if (isQuotedImage) {
-            media = await getFileBuffer(foto1, "image");
-          } else if (isQuotedAudio) {
-            media = await getFileBuffer(audio1, "audio");
-          }
-          let linkz = await upload(media);
-          await reply(`${linkz}`);
-        } catch (e) {
-          console.error(e);
-          await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
-        }
-        break;
-      //DOWNLOADS            
-        
+      
         case 'ytmp4':
 case 'playvid':
 case 'video': {
@@ -11001,9 +10973,7 @@ case 'musica2': {
     }
 break;
 }
-case 'play':
-case 'ytmp3':
-case 'musica': {
+case 'play': {
     let filePath = null;
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
@@ -11020,7 +10990,6 @@ case 'musica': {
             return reply(`⚠️ Muito longo! Máximo 30 min.`);
         }
 
-        // 1. CARD DE PRÉVIA (ESTILO COMPACTO/OFICIAL)
         await nazu.sendMessage(from, { 
             text: `🎧 *Buscando:* ${videoInfo.title}`,
             contextInfo: {
@@ -11028,19 +10997,16 @@ case 'musica': {
                     title: videoInfo.title,
                     body: `YouTube Music • ${videoInfo.author}`,
                     thumbnailUrl: videoInfo.thumbnail,
-                    mediaType: 2, // Ativa o modo player
-                    showAdAttribution: true, // Adiciona a etiqueta de "Verificado/Anúncio"
+                    mediaType: 2,
+                    showAdAttribution: true,
                     sourceUrl: videoInfo.url
                 }
             }
         }, { quoted: info });
 
-        // Download rápido (M4A)
         filePath = await downloadYoutubeM4A_Fast(videoInfo.url); 
 
         if (filePath) {
-            // 2. ENVIO DO ÁUDIO (ESTILO SPOTIFY)
-            // Aqui removemos o 'renderLargerThumbnail' para ficar um card horizontal elegante
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
                 mimetype: 'audio/mp4',
@@ -11051,7 +11017,7 @@ case 'musica': {
                         body: videoInfo.author,
                         thumbnailUrl: videoInfo.thumbnail,
                         mediaType: 1,
-                        renderLargerThumbnail: false, // Card menor ao lado do áudio
+                        renderLargerThumbnail: true,
                         showAdAttribution: false,
                         sourceUrl: videoInfo.url
                     }

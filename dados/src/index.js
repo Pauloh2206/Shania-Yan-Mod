@@ -14611,6 +14611,62 @@ case 'tk':
     }
 break;
 
+case 'hd': {
+    try {
+        const isImageHD = type === 'imageMessage';
+        const isQuotedImageHD = type === 'extendedTextMessage' && info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+
+        if (!isImageHD && !isQuotedImageHD) return reply("❌ Marque ou envie uma imagem!");
+
+        // Reação de emoji e mensagem curta
+        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
+        reply("⏳ Processando em HD...");
+
+        const targetMessage = isQuotedImageHD ? info.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage : info.message.imageMessage;
+        const buffer = await getFileBuffer(targetMessage, 'image');
+
+        if (!buffer) return reply("❌ Erro ao baixar imagem.");
+
+        const fs = await import('fs');
+        const { exec } = await import('child_process');
+
+        const inputPath = `./input_${Date.now()}.jpg`;
+        const outputPath = `./output_${Date.now()}.jpg`;
+
+        fs.writeFileSync(inputPath, buffer);
+
+        // FFmpeg: Dobra o tamanho (scale) e aplica nitidez (unsharp)
+        exec(`ffmpeg -i ${inputPath} -vf "scale=iw*2:-1,unsharp=5:5:1.0:5:5:0.0" -q:v 2 ${outputPath}`, async (error) => {
+            if (error) {
+                console.error(error);
+                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                return reply("❌ Erro no FFmpeg.");
+            }
+
+            const finalBuffer = fs.readFileSync(outputPath);
+
+            // Envia a imagem e reage com check de sucesso
+            await nazu.sendMessage(from, {
+                image: finalBuffer,
+                caption: "✅ *HD FINALIZADO*",
+            }, { quoted: info });
+            
+            await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+
+            // Limpeza de arquivos
+            setTimeout(() => {
+                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+            }, 2000);
+        });
+
+    } catch (err) {
+        console.error(err);
+        reply("❌ Erro inesperado.");
+    }
+}
+break;
+
       case 'qc': {
   try {
     let texto = q && q.trim()

@@ -13105,61 +13105,55 @@ case 'rankuserclean':
     break;    
         
       case 'rankativos':
-      case 'rankativo':
-        try {
-          if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-          
-          // Verify current group members first
-          let currentMembers = AllgroupMembers;
-          let validUsers = [];
-          
-          // Filter out users who have left the group
-          groupData.contador = groupData.contador.filter(user => {
-            const userId = user.id;
-            const isValidMember = currentMembers.includes(userId);
+case 'rankativo':
+    try {
+        if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
+        
+        let currentMembers = AllgroupMembers;
+        
+        // Filtra membros válidos e atualiza o banco de dados
+        let validUsers = groupData.contador.filter(user => currentMembers.includes(user.id));
+        groupData.contador = validUsers;
+        fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+
+        // Ordenação robusta (Soma de tudo)
+        const blue67 = validUsers.sort((a, b) => {
+            const totalA = (a.msg || 0) + (a.cmd || 0) + (a.figu || 0);
+            const totalB = (b.msg || 0) + (b.cmd || 0) + (b.figu || 0);
+            return totalB - totalA;
+        });
+
+        const limite = Math.min(blue67.length, 10);
+        let menc = [];
+        let blad = `*🏆 Rank dos ${limite} mais ativos do grupo:*\n`;
+
+        for (let i = 0; i < limite; i++) {
+            const user = blue67[i];
+            const total = (user.msg || 0) + (user.cmd || 0) + (user.figu || 0);
             
-            if (!isValidMember) {
-              console.log(`[RANKATIVO] Removed departed user: ${userId} (${getUserName(userId)})`);
-              return false;
+            // Design original com melhorias de espaçamento
+            blad += `\n*🏅 ${i + 1}º Lugar:* @${getUserName(user.id)}\n`;
+            blad += `- Mensagens enviadas: *${user.msg || 0}*\n`;
+            blad += `- Comandos executados: *${user.cmd || 0}*\n`;
+            blad += `- Figurinhas enviadas: *${user.figu || 0}*\n`;
+            blad += `*→ Atividade Total:* ${total}\n`;
+
+            if (!groupData.mark) groupData.mark = {};
+            if (!['0', 'marca'].includes(groupData.mark[user.id])) {
+                menc.push(user.id);
             }
-            
-            validUsers.push(user);
-            return true;
-          });
-          
-          // Save updated data
-          fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
-          
-          var blue67;
-          blue67 = validUsers.sort((a, b) => (a.figu == undefined ? a.figu = 0 : a.figu + a.msg + a.cmd) < (b.figu == undefined ? b.figu = 0 : b.figu + b.cmd + b.msg) ? 0 : -1);
-          var menc;
-          menc = [];
-          let blad;
-          blad = `*🏆 Rank dos ${blue67.length < 10 ? blue67.length : 10} mais ativos do grupo:*\n`;
-          for (i6 = 0; i6 < (blue67.length < 10 ? blue67.length : 10); i6++) {
-            if (blue67[i6].id) {
-              if (i6 != null) {
-                blad += `\n*🏅 ${i6 + 1}º Lugar:* @${getUserName(blue67[i6].id)}\n- mensagens encaminhadas: *${blue67[i6].msg}*\n- comandos executados: *${blue67[i6].cmd}*\n- Figurinhas encaminhadas: *${blue67[i6].figu}*\n`;
-              }
-              if (!groupData.mark) {
-                groupData.mark = {};
-              }
-              if (!['0', 'marca'].includes(groupData.mark[blue67[i6].id])) {
-                menc.push(blue67[i6].id);
-              }
-            }
-          }
-          await nazu.sendMessage(from, {
+        }
+
+        await nazu.sendMessage(from, {
             text: blad,
             mentions: menc
-          }, {
-            quoted: info
-          });
-        } catch (e) {
-          console.error('[RANKATIVO] Erro:', e);
-          await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
-        }
-        break;
+        }, { quoted: info });
+
+    } catch (e) {
+        console.error('[RANKATIVO] Erro:', e);
+        await reply("❌ Ocorreu um erro ao gerar o ranking.");
+    }
+    break;
       case 'rankinativos':
       case 'rankinativo':
         try {

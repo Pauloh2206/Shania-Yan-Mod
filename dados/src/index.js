@@ -10826,23 +10826,20 @@ if (forcas[from]) {
 case 'playvid':
 case 'video': {
     let videoFilePath = null;
-    if (!isOwner || !q) return; 
+    
+    if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
+    if (!q) return reply("❌ Digite o nome ou link do vídeo.");
 
     try {
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
 
         const yts = (await import('yt-search')).default;
         const search = await yts(q);
-        
-        // Filtro para pegar o primeiro VÍDEO (pula lives que bugam o card)
         const videoInfo = search.videos.find(v => v.type === 'video'); 
 
         if (!videoInfo) return reply("❌ Nenhum vídeo encontrado.");
-        
-        // Novo limite de segurança (100MB costuma ter uns 15-20 min em modo Fast)
         if (videoInfo.seconds > 1200) return reply("⚠️ Vídeo muito longo (máx 20 min).");
 
-        // Card minimalista corrigido
         await nazu.sendMessage(from, { 
             text: `⚡ *Iniciando envio:* ${videoInfo.title}`,
             contextInfo: {
@@ -10859,31 +10856,26 @@ case 'video': {
 
         await nazu.sendMessage(from, { react: { text: '📥', key: info.key } });
 
-        // Download Modo Fast (mais leve para o sistema)
         videoFilePath = await downloadYoutubeMp4_Fast(videoInfo.url); 
 
         if (videoFilePath && fs.existsSync(videoFilePath)) {
             await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
 
-            // ENVIO OTIMIZADO PARA ARQUIVOS GRANDES
             await nazu.sendMessage(from, { 
-                video: { url: videoFilePath }, // Usa URL/Caminho em vez de Buffer para não crashar a RAM
+                video: { url: videoFilePath }, 
                 mimetype: 'video/mp4',
                 caption: `✅ *${videoInfo.title}*`
             }, { 
                 quoted: info,
-                uploadtimeout: 1000 * 60 * 5 // 5 minutos de tolerância para o upload
+                uploadtimeout: 1000 * 60 * 5 
             });
             
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
         }
         
     } catch (error) {
-        console.error('ERRO NO VIDEO:', error);
-        // Se o erro for de timeout, avisamos
-        if (error.message.includes('timeout')) {
-            reply("❌ O upload demorou demais e a conexão caiu. Tente um vídeo menor ou melhore o sinal.");
-        }
+        console.error(error);
+        reply("❌ Erro ao processar vídeo.");
     } finally {
         if (videoFilePath && fs.existsSync(videoFilePath)) {
             try { fs.unlinkSync(videoFilePath); } catch (e) {}
@@ -10892,7 +10884,8 @@ case 'video': {
     break;
 }
         case 'play2':
-case 'musica2': {    
+        case 'musica2': {
+    if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");    
     if (!q) return reply(`🎵 *YOUTUBE PLAYER (V2)* 🎵\n\n📝 Digite o nome da música.`);
 
     try {
@@ -10987,6 +10980,7 @@ case 'musica2': {
 break;
 }
 case 'play': {
+if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
     let filePath = null;
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
@@ -11824,7 +11818,7 @@ case 'ownermenu':
         }
         break;
       case 'blockuserg':
-        if (!isOwner && !isSubOwner) return reply("Este comando é apenas para o meu dono");
+        if (!isOwne) return reply("Este comando é apenas para o meu dono");
         try {
           if (!menc_os2) return reply("Marque alguém 🙄");
           var reason;
@@ -11848,7 +11842,7 @@ case 'ownermenu':
         }
         break;
       case 'unblockuserg':
-        if (!isOwner && !isSubOwner) return reply("Este comando é apenas para o meu dono");
+        if (!isOwner) return reply("Este comando é apenas para o meu dono");
         try {
           if (!menc_os2) return reply("Marque alguém 🙄");
           const blockFile = pathz.join(DATABASE_DIR, 'globalBlocks.json');

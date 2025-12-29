@@ -15338,23 +15338,46 @@ case 'roubar':
         }
         break;
       case 'banir':
-      case 'ban':
-      case 'b':
-      case 'kick':
-        try {
-          if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-          if (!isGroupAdmin) return reply("Comando restrito a Administradores ou Moderadores com permissão. 💔");
-          if (!isBotAdmin) return reply("Eu preciso ser adm 💔");
-          if (!menc_os2) return reply("Marque alguém 🙄");
-          if (menc_os2 === nmrdn) return reply("❌ Não posso banir o dono do bot.");
-          if (menc_os2 === botNumber) return reply("❌ Ops! Eu faço parte da bagunça, não dá pra me remover 💔");
-          await nazu.groupParticipantsUpdate(from, [menc_os2], 'remove');
-          reply(`✅ Usuário banido com sucesso!${q && q.length > 0 ? '\n\nMotivo: ' + q : ''}`);
-        } catch (e) {
-          console.error(e);
-          reply("ocorreu um erro 💔");
-        }
-        break;
+case 'ban':
+case 'b':
+case 'kick':
+    try {
+        if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
+        if (!isGroupAdmin) return reply("Comando restrito a Administradores ou Moderadores com permissão. 💔");
+        if (!isBotAdmin) return reply("Eu preciso ser adm 💔");
+        if (!menc_os2) return reply("Marque alguém 🙄");
+
+        const target = menc_os2; // JID do alvo
+        
+        // 1. Pega o LID do alvo (se existir nos participantes do grupo)
+        const participant = groupMetadata?.participants.find(p => p.id === target);
+        const targetLid = participant?.lid || "";
+
+        // 2. Verifica se o alvo é Admin do grupo
+        const targetIsAdmin = groupAdmins.includes(target);
+        
+        // 3. Verifica se o alvo é Dono (compara JID)
+        const targetIsOwner = target.includes(config.numerodono) || target.includes(config.numerodono2);
+
+        // 4. Verifica se o alvo é Subdono (compara JID e LID)
+        // Usamos a função global getSubdonos ou acessamos a lista se ela existir
+        const subdonosList = typeof getSubdonos === 'function' ? getSubdonos() : (config.subdonos || []);
+        const targetIsSub = subdonosList.includes(target) || (targetLid && subdonosList.includes(targetLid));
+
+        // --- TRAVAS DE SEGURANÇA ---
+        if (target === botNumber) return reply("❌ Ops! Eu faço parte da bagunça, não dá pra me remover 💔");
+        if (targetIsOwner || targetIsSub) return reply("❌ Não posso remover o Dono ou Subdono do bot.");
+        if (targetIsAdmin) return reply("❌ Não posso banir um Administrador do grupo.");
+
+        // Se passou por tudo, remove
+        await nazu.groupParticipantsUpdate(from, [target], 'remove');
+        reply(`✅ Usuário banido com sucesso!${q && q.length > 0 ? '\n\nMotivo: ' + q : ''}`);
+
+    } catch (e) {
+        console.error(e);
+        reply("ocorreu um erro ao tentar banir 💔");
+    }
+    break;
       case 'linkgp':
       case 'linkgroup':
         try {
@@ -17139,32 +17162,51 @@ Exemplos:
         }
         break;
       case 'mute':
-      case 'mutar':
-        try {
-          if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-          if (!isGroupAdmin) return reply("você precisa ser adm 💔");
-          if (!isBotAdmin) return reply("Eu preciso ser adm 💔");
-          if (!menc_os2) return reply("Marque alguém 🙄");
-          const groupFilePath = __dirname + `/../database/grupos/${from}.json`;
-          let groupData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {
-            mutedUsers: {}
-          };
-          
-          groupData.mutedUsers = groupData.mutedUsers || {};
-          
-          groupData.mutedUsers[menc_os2] = true;
-          fs.writeFileSync(groupFilePath, JSON.stringify(groupData));
-          await nazu.sendMessage(from, {
-            text: `✅ @${getUserName(menc_os2)} foi mutado. Se enviar mensagens, será banido.`,
-            mentions: [menc_os2]
-          }, {
-            quoted: info
-          });
-        } catch (e) {
-          console.error(e);
-          reply("ocorreu um erro 💔");
+case 'mutar':
+    try {
+        if (!isGroup) return reply("isso so pode ser usado em grupo 💔");
+        if (!isGroupAdmin) return reply("você precisa ser adm 💔");
+        if (!isBotAdmin) return reply("Eu preciso ser adm 💔");
+        if (!menc_os2) return reply("Marque alguém 🙄");
+
+        const target = menc_os2;
+
+        // TRAVA: Verifica se o alvo é Admin, Dono ou Subdono
+        const targetIsAdmin = groupAdmins.includes(target);
+        const targetIsOwner = target.includes(config.numerodono) || target.includes(config.numerodono2) || (typeof isSubOwner !== 'undefined' && isSubOwner);
+        
+        if (targetIsAdmin || targetIsOwner) {
+            return reply("❌ Você não pode mutar um Administrador, Dono ou Subdono!");
         }
-        break;
+
+        // Caminho idêntico ao seu original
+        const groupFilePath = __dirname + `/../database/grupos/${from}.json`;
+        
+        // Garante que a pasta existe para não dar erro de "no such file"
+        const folderPath = __dirname + `/../database/grupos`;
+        if (!fs.existsSync(folderPath)) {
+            fs.mkdirSync(folderPath, { recursive: true });
+        }
+
+        let groupDataMute = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {
+            mutedUsers: {}
+        };
+        
+        groupDataMute.mutedUsers = groupDataMute.mutedUsers || {};
+        groupDataMute.mutedUsers[target] = true;
+        
+        fs.writeFileSync(groupFilePath, JSON.stringify(groupDataMute, null, 2));
+
+        await nazu.sendMessage(from, {
+            text: `✅ @${getUserName(target)} foi mutado. Se enviar mensagens, será banido.`,
+            mentions: [target]
+        }, { quoted: info });
+
+    } catch (e) {
+        console.error(e);
+        reply("ocorreu um erro ao processar o mute 💔");
+    }
+    break;
       case 'desmute':
       case 'desmutar':
       case 'unmute':

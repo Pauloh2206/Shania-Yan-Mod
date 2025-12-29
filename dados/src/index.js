@@ -666,13 +666,24 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     const ownerBase = String(numerodono);
     const lidOwnerBase = lidowner ? lidowner.split('@')[0] : null;
     
+    // 1. Apenas lê o arquivo (Sem criar variáveis que já existam como const)
+    const config_atual = JSON.parse(fs.readFileSync('./dados/src/config.json'));
+    
+    // 2. Criamos apenas o que é NOVO (Dono 2)
+    const nmrdn2 = config_atual.numerodono2 ? config_atual.numerodono2 + '@s.whatsapp.net' : null;
+    const lidowner2 = config_atual.lidowner2 || null;
+
+    // 3. Sua lógica de isOwner (Usando as variáveis que o seu bot já definiu antes)
     const isOwner = senderBase === ownerBase || 
-                    sender === nmrdn || 
+                    sender === nmrdn || // nmrdn já existe acima no seu código
                     sender === ownerJid || 
                     (lidowner && sender === lidowner) || 
                     (lidOwnerBase && senderBase === lidOwnerBase) ||
                     info.key.fromMe || 
-                    isBotSender;
+                    isBotSender ||
+                    // Adicionamos as checagens do Dono 2 aqui
+                    (nmrdn2 && sender === nmrdn2) || 
+                    (lidowner2 && sender === lidowner2);
     
     const isOwnerOrSub = isOwner || isSubOwner;
    
@@ -8518,6 +8529,8 @@ if (forcas[from]) {
         }
         break;
 
+
+
       case 'addsubdono':
         if (!isOwner && !isSubOwner) return reply("🚫 Apenas o Dono principal pode adicionar subdonos!");
         if (isSubOwner && !isOwner) return reply("🚫 Subdonos não podem adicionar outros subdonos!");
@@ -13701,21 +13714,131 @@ case 'rankuserclean':
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
-      case 'dono':
-        try {
-          const numeroDonoFormatado = numerodono ? String(numerodono).replace(/\D/g, '') : 'Não configurado';
-          const TextinDonoInfo = `╭━━━⊱ 👑 *DONO DO BOT* 👑 ⊱━━━╮
-│
-│ 👤 *Nome:* ${nomedono}
-│ 📱 *Contato:* wa.me/${numeroDonoFormatado}
-│
-╰━━━━━━━━━━━━━━━━━━━━━━━━╯`;
-          await reply(TextinDonoInfo);
-        } catch (e) {
-          console.error(e);
-          await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
+      // CASE PARA ADICIONAR
+case 'addowner': {
+    // TRAVA SUPREMA: Apenas você (Dono 1)
+    if (sender !== config.numerodono + '@s.whatsapp.net' && sender !== config.lidowner) {
+        return reply("🚫 Apenas o Dono Principal pode nomear outros donos!");
+    }
+
+    try {
+        let targetUserId;
+        let targetLid;
+        let targetName = "Dono 2";
+
+        if (menc_jid2 && menc_jid2.length > 0) {
+            targetUserId = menc_jid2[0];
+            // Se marcou alguém, tentamos pegar o nome dela (se disponível) ou mantemos o padrão
+            targetName = (typeof pushname !== 'undefined' ? pushname : "Dono 2");
+        } else if (q && q.trim()) {
+            // Divide o comando por espaços: [0] é o número, o resto é o nome
+            const args = q.trim().split(/\s+/);
+            const cleanNumber = args[0].replace(/\D/g, '');
+            
+            if (cleanNumber.length >= 10) {
+                targetUserId = `${cleanNumber}@s.whatsapp.net`;
+                
+                // Se houver algo escrito após o número, vira o nome
+                if (args.length > 1) {
+                    targetName = args.slice(1).join(' '); // Junta o resto das palavras
+                } else {
+                    // Se enviou só o número, tenta buscar no cache do bot
+                    try {
+                        const contact = await nazu.contactAddOrGet(targetUserId);
+                        targetName = contact?.notify || contact?.name || "Dono 2";
+                    } catch { targetName = "Dono 2"; }
+                }
+                
+                // Busca o LID para garantir funcionamento total
+                try {
+                    const [result] = await nazu.onWhatsApp(cleanNumber);
+                    if (result && result.lid) targetLid = result.lid;
+                } catch (err) { console.log(err.message); }
+            } else {
+                return reply("❌ Número inválido!");
+            }
+        } else {
+            return reply(`📝 *Como usar:*\n/addowner 55389... Nome\nOu marque alguém.`);
         }
-        break;
+
+        const fs = (await import('fs')).default;
+        const configPath = './dados/src/config.json';
+        let config_file = JSON.parse(fs.readFileSync(configPath));
+        
+        config_file.nomedono2 = targetName;
+        config_file.numerodono2 = targetUserId.split('@')[0];
+        config_file.lidowner2 = targetLid || targetUserId.replace('@s.whatsapp.net', '@lid');
+
+        fs.writeFileSync(configPath, JSON.stringify(config_file, null, 2));
+
+        await nazu.sendMessage(from, { react: { text: '👑', key: info.key } });
+        reply(`✅ *Dono 2 Adicionado!*\n\n👤 *Nome:* ${targetName}\n📱 *Número:* ${config_file.numerodono2}\n\n_Configurações salvas em dados/src/config.json_`);
+
+    } catch (e) {
+        console.error(e);
+        reply("❌ Erro ao processar o comando.");
+    }
+}
+break;
+
+// CASE PARA REMOVER
+case 'delowner': {
+    // TRAVA SUPREMA: Apenas o Dono 1 pode remover
+    if (sender !== config.numerodono + '@s.whatsapp.net' && sender !== config.lidowner) {
+        return reply("🚫 Apenas o Dono Principal pode revogar este cargo!");
+    }
+
+    try {
+        const fs = (await import('fs')).default;
+        const configPath = './dados/src/config.json';
+        let config_file = JSON.parse(fs.readFileSync(configPath));
+
+        if (!config_file.numerodono2) return reply("⚠️ Não existe um segundo dono.");
+
+        delete config_file.nomedono2;
+        delete config_file.numerodono2;
+        delete config_file.lidowner2;
+
+        fs.writeFileSync(configPath, JSON.stringify(config_file, null, 2));
+
+        await nazu.sendMessage(from, { react: { text: '🗑️', key: info.key } });
+        reply(`✅ Segundo dono removido com sucesso.`);
+    } catch (e) {
+        reply("❌ Erro ao remover.");
+    }
+}
+break;
+
+// CASE DONO (ESTILO CAIXINHA ATUALIZADO)
+case 'dono':
+    try {
+        const fs = (await import('fs')).default;
+        const config = JSON.parse(fs.readFileSync('./dados/src/config.json'));
+        
+        const numeroDono1 = config.numerodono ? String(config.numerodono).replace(/\D/g, '') : 'Não configurado';
+        
+        let TextinDonoInfo = `╭━━━⊱ 👑 *DONO DO BOT* 👑 ⊱━━━╮\n`;
+        TextinDonoInfo += `│\n`;
+        TextinDonoInfo += `│ 👤 *Dono 1:* ${config.nomedono}\n`;
+        TextinDonoInfo += `│ 📱 *Contato:* wa.me/${numeroDono1}\n`;
+        
+        // Adiciona o Dono 2 apenas se ele existir no arquivo
+        if (config.numerodono2) {
+            const numeroDono2 = String(config.numerodono2).replace(/\D/g, '');
+            TextinDonoInfo += `│\n`;
+            TextinDonoInfo += `│ 👤 *Dono 2:* ${config.nomedono2 || 'Dono 2'}\n`;
+            TextinDonoInfo += `│ 📱 *Contato:* wa.me/${numeroDono2}\n`;
+        }
+        
+        TextinDonoInfo += `│\n`;
+        TextinDonoInfo += `╰━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+        
+        await reply(TextinDonoInfo);
+    } catch (e) {
+        console.error(e);
+        await reply("❌ Ocorreu um erro interno ao buscar informações do dono.");
+    }
+    break;
 
       case 'editor':
         try {
@@ -13964,23 +14087,19 @@ _Desenvolvedor: Paulo Hernani (Taki)_`;
     }
     break;
 
-case 'anime':
+case 'anime': {
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
 
-        const commandName = 'anime';
         const rawBodyWithoutPrefix = body.substring(prefix.length).trim();
         const parts = rawBodyWithoutPrefix.split(/\s+/);
-
-        if (parts.length <= 1 || parts[0].toLowerCase() !== commandName) {
+        
+        if (parts.length <= 1) {
              await nazu.sendMessage(from, { react: { text: '🎬', key: info.key } });
-             return reply('🎬 Informe o nome do nome. Exemplo: /anime Ataque dos Titãs');
+             return reply('🎬 Informe o nome do anime. Exemplo: /anime Naruto');
         }
         
         const nomeAnime = parts.slice(1).join(' ');
-        
-        await reply(`🔍 Buscando informações sobre "${nomeAnime}" no MyAnimeList e traduzindo...`);
-        
         const apiUrl = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(nomeAnime)}&limit=1`;
         
         const response = await axios.get(apiUrl);
@@ -13988,45 +14107,54 @@ case 'anime':
 
         if (!data || !data.data || data.data.length === 0) {
             await nazu.sendMessage(from, { react: { text: '❓', key: info.key } });
-            return reply(`❌ Não encontrei nenhum nome com o título "${nomeAnime}".`);
+            return reply(`❌ Não encontrei nenhum anime com o título "${nomeAnime}".`);
         }
         
         const anime = data.data[0];
-        
         const titleJapanese = anime.title_japanese || 'N/A';
         const titleEnglish = anime.title_english || anime.title || 'N/A';
-        let synopsis = anime.synopsis || 'Sinopse indisponível.';
-        
-        const episodes = anime.episodes || 'N/A';
+        const episodes = anime.episodes || 'Em lançamento';
         const status = anime.status || 'N/A';
+        const score = anime.score || 'N/A';
+        const genres = anime.genres ? anime.genres.map(g => g.name).join(', ') : 'N/A';
         const premiered = anime.season && anime.year ? `${anime.season} ${anime.year}` : anime.year || 'N/A';
-        const imageUrl = anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || anime.images?.webp?.image_url || anime.images?.jpg?.image_url;
+        const imageUrl = anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url;
 
-        let synopsisTranslated = synopsis;
-        if (synopsis !== 'Sinopse indisponível.' && anime.synopsis) {
-            
-            const synopsisLimit = 1500; 
-            let conciseSynopsis = anime.synopsis;
+        // Tradução de Status e Temporada
+        const translatedStatus = status.replace('Finished Airing', 'Concluído').replace('Currently Airing', 'Em Andamento').replace('Not yet aired', 'Ainda não exibido');
+        const translatedPremiered = premiered.replace('Spring', 'Primavera').replace('Summer', 'Verão').replace('Fall', 'Outono').replace('Winter', 'Inverno');
 
-            if (anime.synopsis.length > synopsisLimit) {
-                conciseSynopsis = anime.synopsis.substring(0, synopsisLimit);
-                conciseSynopsis += '...';
+        // Lógica de Lançamento (Para animes novos)
+        let lancamentoInfo = '';
+        if (status === 'Currently Airing' && anime.broadcast?.string) {
+            let dia = anime.broadcast.string;
+            const diasTrad = {
+                'Mondays': 'Segundas-feiras', 'Tuesdays': 'Terças-feiras', 'Wednesdays': 'Quartas-feiras',
+                'Thursdays': 'Quintas-feiras', 'Fridays': 'Sextas-feiras', 'Saturdays': 'Sábados', 'Sundays': 'Domingos'
+            };
+            for (let eng in diasTrad) {
+                if (dia.includes(eng)) dia = dia.replace(eng, diasTrad[eng]);
             }
+            lancamentoInfo = `\n*• Lançamento:* 📡 ${dia}`;
+        }
 
+        // Tradução da Sinopse
+        let synopsisTranslated = 'Sinopse indisponível.';
+        if (anime.synopsis) {
+            const conciseSynopsis = anime.synopsis.length > 1500 ? anime.synopsis.substring(0, 1500) + '...' : anime.synopsis;
             synopsisTranslated = await traduzirTexto(conciseSynopsis, 'en', 'pt');
         }
-        
-        const translatedStatus = status.replace('Finished Airing', 'Concluído').replace('Currently Airing', 'Em Andamento').replace('Not yet aired', 'Ainda não exibido');
-        const translatedPremiered = premiered.replace('Spring', 'Primavera').replace('Summer', 'Verão').replace('Fall', 'Outono').replace('Winter', 'Inverno').replace('N/A', 'N/A');
 
         const resultadoFormatado = `
 *🎬 Detalhes do Anime*
 *Título:* ${titleEnglish}
 *Título Japonês:* ${titleJapanese}
 
+*• Nota:* ⭐ ${score}
+*• Status:* ${translatedStatus}${lancamentoInfo}
 *• Episódios:* ${episodes}
-*• Status:* ${translatedStatus}
 *• Estreia:* ${translatedPremiered}
+*• Gêneros:* ${genres}
 
 *Sinopse:*
 ${synopsisTranslated.trim()}
@@ -14036,11 +14164,7 @@ _MyAnimeList (👨‍💻 Paulo - Taki 🍥)_`;
 
         if (imageUrl) {
             const imageBuffer = (await axios.get(imageUrl, { responseType: 'arraybuffer' })).data;
-            
-            await nazu.sendMessage(from, {
-                image: imageBuffer,
-                caption: resultadoFormatado.trim(), 
-            }, { quoted: info });
+            await nazu.sendMessage(from, { image: imageBuffer, caption: resultadoFormatado.trim() }, { quoted: info });
         } else {
             await reply(resultadoFormatado.trim());
         }
@@ -14048,14 +14172,12 @@ _MyAnimeList (👨‍💻 Paulo - Taki 🍥)_`;
         await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
 
     } catch (e) {
-        let errorMessage = 'Ocorreu um erro desconhecido ao buscar o nome.';
-        if (axios.isAxiosError(e)) {
-            errorMessage = `❌ Erro de API (Jikan/Tradução): Não foi possível buscar/traduzir os dados. Status: ${e.response?.status || 'desconhecido'}.`;
-        }
+        console.error(e);
         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-        await reply(errorMessage);
+        await reply('❌ Erro ao buscar ou traduzir os dados.');
     }
-    break;
+}
+break;
 
 async function traduzirTexto(text, sourceLang, targetLang) {
     try {

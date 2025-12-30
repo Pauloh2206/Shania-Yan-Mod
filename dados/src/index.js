@@ -196,6 +196,18 @@ import {
   JID_LID_CACHE_FILE
 } from './utils/paths.js';
 
+// Define o caminho do arquivo
+const travasPath = pathz.resolve('./dados/travas.json');
+
+// Carrega os comandos bloqueados
+let comandosPrivados = [];
+if (fs.existsSync(travasPath)) {
+    try {
+        comandosPrivados = JSON.parse(fs.readFileSync(travasPath, 'utf-8'));
+    } catch (e) {
+        comandosPrivados = [];
+    }
+}
 // ===============================================
 // FUNÇÕES AUXILIARES NO ESCOPO GLOBAL
 // ========================================
@@ -3579,6 +3591,13 @@ if (forcas[from]) {
                 delete forcas[from];
             }
         }
+    }
+}
+// --- VERIFICAÇÃO DE PERMISSÃO GLOBAL (COM SUBDONO) ---
+const cmdSafe = command ? command.toLowerCase() : '';
+if (comandosPrivados.includes(cmdSafe)) {  
+    if (!isOwner && !isSubOwner) {
+        return reply(`⚠️ O comando *!${command}* está restrito apenas para Donos e Subdonos.`);
     }
 }
 // -----------------------------------------------------------
@@ -10827,7 +10846,7 @@ case 'playvid':
 case 'video': {
     let videoFilePath = null;
     
-    if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
+   // if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
     if (!q) return reply("❌ Digite o nome ou link do vídeo.");
 
     try {
@@ -10885,7 +10904,7 @@ case 'video': {
 }
         case 'play2':
         case 'musica2': {
-    if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");    
+    //if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");    
     if (!q) return reply(`🎵 *YOUTUBE PLAYER (V2)* 🎵\n\n📝 Digite o nome da música.`);
 
     try {
@@ -10980,7 +10999,7 @@ case 'video': {
 break;
 }
 case 'play': {
-if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
+// if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
     let filePath = null;
     try {
         await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
@@ -14749,6 +14768,63 @@ case 'hd': {
         console.error(err);
         reply("❌ Erro inesperado.");
     }
+}
+break;
+
+case 'permissao':
+case 'p': {
+    // Permite que você ou seus subdonos gerenciem as travas
+    if (!isOwner && !isSubOwner) return reply("❌ Sem permissão.");
+    
+    const cmdNome = args[0]?.toLowerCase();
+    if (!cmdNome) return reply("❓ Qual comando? Ex: !p play");
+
+    const index = comandosPrivados.indexOf(cmdNome);
+
+    if (index === -1) {
+        comandosPrivados.push(cmdNome);
+        reply(`🔒 *!${cmdNome}* agora é só para Donos/Subdonos.`);
+    } else {
+        comandosPrivados.splice(index, 1);
+        reply(`🔓 *!${cmdNome}* agora está LIBERADO.`);
+    }
+
+    fs.writeFileSync(travasPath, JSON.stringify(comandosPrivados, null, 2));
+}
+break;
+
+case 'listper': {
+    const busca = args[0]?.toLowerCase();
+
+    // 1. Consulta de um comando específico: !listper play
+    if (busca) {
+        const estaRestrito = comandosPrivados.includes(busca);
+        let statusMsg = `📊 *Status de Permissão: !${busca}*\n\n`;
+        
+        if (estaRestrito) {
+            statusMsg += `Nível: 🔒 *RESTRITO*\n`;
+            statusMsg += `Quem pode usar: *Dono e Subdonos*`;
+        } else {
+            statusMsg += `Nível: 🔓 *LIBERADO*\n`;
+            statusMsg += `Quem pode usar: *Todos os usuários*`;
+        }
+        return reply(statusMsg);
+    }
+
+    // 2. Listagem de todos os comandos que você "trancou"
+    if (comandosPrivados.length === 0) {
+        return reply("✅ *Configuração Atual:*\nTodos os comandos do bot estão liberados para todos.");
+    }
+
+    let texto = "🚫 *COMANDOS COM TRAVA ATIVA:*\n";
+    texto += "_Estes comandos só funcionam para Dono e Subdonos_\n\n";
+    
+    comandosPrivados.forEach((cmd, i) => {
+        texto += `> ${i + 1}. !${cmd}\n`;
+    });
+
+    texto += `\n*Total de travas:* ${comandosPrivados.length}`;
+    reply(texto);
 }
 break;
 

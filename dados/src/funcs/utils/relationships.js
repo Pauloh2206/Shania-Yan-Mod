@@ -495,71 +495,69 @@ class RelationshipManager {
   getRelationshipSummary(userA, userB) {
     const key = this._getPairKey(userA, userB);
     if (!key) {
-      return {
-        success: false,
-        message: 'Não foi possível identificar essa dupla.'
-      };
+      return { success: false, message: 'Não foi possível identificar essa dupla.' };
     }
 
     const data = this._loadData();
     const pair = data.pairs[key];
     if (!pair || !pair.status) {
-      return {
-        success: false,
-        message: 'Nenhum relacionamento ativo registrado entre essas pessoas.'
-      };
+      return { success: false, message: 'Nenhum relacionamento ativo registrado entre essas pessoas.' };
     }
 
     const partnerA = getUserName(userA);
     const partnerB = getUserName(userB);
+    const statusConfig = TYPE_CONFIG[pair.status] || { label: 'Desconhecido', emoji: '⚠️' };
+    
+    // Cálculos de tempo
+    const statusSince = pair.stages?.[pair.status]?.since;
+    const formattedDate = statusSince ? this._formatDate(statusSince).split(',')[0] : '---';
+    const duration = statusSince ? this._formatDuration(Date.now() - Date.parse(statusSince)) : null;
+
+    // Cabeçalho Premium
     const lines = [
-      '💞 *RELACIONAMENTO*',
+      '╔═══════════════════════╗',
+      '      💞  *STATUS DE UNIÃO* 💞',
+      '╚═══════════════════════╝',
       '',
-      `👥 Parceiros: @${partnerA} & @${partnerB}`
+      '✨ *PARCEIROS:*',
+      `👤 @${partnerA}`,
+      `👤 @${partnerB}`,
+      '',
+      `💍 *STATUS:* ${statusConfig.label}`,
+      `⏳ *DURAÇÃO:* ${duration ? `há ${duration}` : 'Acabou de começar'}`,
+      `📅 *INÍCIO:* ${formattedDate}`,
+      '',
+      '📊 *LINHA DO TEMPO:*',
+      '───────────────────────'
     ];
 
-    if (pair.status && TYPE_CONFIG[pair.status]) {
-      const statusConfig = TYPE_CONFIG[pair.status];
-      lines.push(`${statusConfig.emoji} Status atual: ${statusConfig.label}`);
-      
-      const statusSince = pair.stages?.[pair.status]?.since;
-      if (statusSince) {
-        const formatted = this._formatDate(statusSince);
-        const sinceTimestamp = Date.parse(statusSince);
-        const duration = Number.isNaN(sinceTimestamp) ? null : this._formatDuration(Date.now() - sinceTimestamp);
-        lines.push(`🗓️ Desde: ${formatted || 'data desconhecida'}${duration ? ` (há ${duration})` : ''}`);
-      }
-    } else {
-      lines.push('⚠️ Status atual: sem registro válido.');
-    }
-
-    // Mostra histórico de estágios
-    const historicalStages = ['brincadeira', 'namoro', 'casamento']
-      .filter(stage => pair.stages?.[stage]?.since)
-      .map(stage => {
+    // Histórico de estágios formatado
+    ['brincadeira', 'namoro', 'casamento'].forEach(stage => {
+      const stageData = pair.stages?.[stage];
+      if (stageData) {
         const config = TYPE_CONFIG[stage];
-        const since = pair.stages[stage].since;
-        const formatted = this._formatDate(since);
-        const sinceTimestamp = Date.parse(since);
-        const duration = Number.isNaN(sinceTimestamp) ? null : this._formatDuration(Date.now() - sinceTimestamp);
-        return `${config.emoji} ${config.label}: ${formatted || 'data desconhecida'}${duration ? ` (há ${duration})` : ''}`;
-      });
+        const date = this._formatDate(stageData.since).split(',')[0];
+        lines.push(`${config.emoji} *${config.label.toUpperCase()}:* ${date}`);
+      }
+    });
 
-    if (historicalStages.length > 0) {
-      lines.push('', '📚 Histórico de Estágios:', ...historicalStages);
+    lines.push('───────────────────────');
+
+    // Adiciona informação de Traição se houver
+    const betrayals = (pair.history || []).filter(h => h.type === 'traicao').length;
+    if (betrayals > 0) {
+      lines.push('', '⚠️ *ALERTA DE HISTÓRICO:*');
+      lines.push(`💔 Este casal já possui *${betrayals}* registros de traição.`);
     }
 
-    // Se está namorando mas não casado, mostra tempo restante para casar
+    // Verificação de casamento se estiver apenas namorando
     if (pair.status === 'namoro' && pair.stages?.namoro?.since) {
-      const namoroSince = Date.parse(pair.stages.namoro.since);
-      if (!Number.isNaN(namoroSince)) {
-        const elapsed = Date.now() - namoroSince;
-        if (elapsed < MARRIAGE_REQUIRED_MS) {
-          const remaining = MARRIAGE_REQUIRED_MS - elapsed;
-          lines.push('', `⏳ Tempo restante para liberar casamento: ${this._formatDuration(remaining)}`);
-        } else {
-          lines.push('', `✅ Já podem se casar! Tempo de namoro: ${this._formatDuration(elapsed)}`);
-        }
+      const elapsed = Date.now() - Date.parse(pair.stages.namoro.since);
+      if (elapsed < MARRIAGE_REQUIRED_MS) {
+        const remaining = this._formatDuration(MARRIAGE_REQUIRED_MS - elapsed);
+        lines.push('', `🔒 _Casamento libera em: ${remaining}_`);
+      } else {
+        lines.push('', '✅ _O Casamento já está disponível!_');
       }
     }
 

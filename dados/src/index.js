@@ -5,7 +5,7 @@ import { downloadMp3V2 } from './utils/youtube_v2.js';
 import { autoWarnUser } from './utils/autoWarn.js';
 import { downloadYoutubeMp4_Fast } from './utils/youtubeVideo.js';
 import Jimp from 'jimp';
-import { downloadYoutubeM4A_Fast, getVideoMetadata } from './utils/youtube.js';
+import { downloadYoutubeM4A_Fast } from './utils/youtube.js';
 import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
 import makeWASocket from 'whaileys';
@@ -10841,60 +10841,93 @@ if (comandosPrivados.includes(cmdSafe)) {
         }
         break;
       
-        case 'ytmp4':
-case 'playvid':
+       case 'playvid':
 case 'video': {
     let videoFilePath = null;
-    
-   // if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
-    if (!q) return reply("❌ Digite o nome ou link do vídeo.");
+    if (!q) return reply(`❌ *Comando incompleto!*\nDigite o nome ou o link do vídeo.`);
 
     try {
+        // 1. REAÇÃO DE BUSCA
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
 
         const yts = (await import('yt-search')).default;
-        const search = await yts(q);
-        const videoInfo = search.videos.find(v => v.type === 'video'); 
+        let videoInfo = null;
 
-        if (!videoInfo) return reply("❌ Nenhum vídeo encontrado.");
-        if (videoInfo.seconds > 1200) return reply("⚠️ Vídeo muito longo (máx 20 min).");
+        const match = q.match(/(?:youtu\.be\/|youtube\.com(?:\/(?:v|e|embed)\/|\/.*[?&]v=|\/shorts\/))([^"&?\/\s]{11})/);
+        const videoId = match ? match[1] : null;
 
-        await nazu.sendMessage(from, { 
-            text: `⚡ *Iniciando envio:* ${videoInfo.title}`,
-            contextInfo: {
-                externalAdReply: {
-                    title: videoInfo.title,
-                    body: `Tamanho estimado: ~${(videoInfo.seconds * 0.15).toFixed(1)}MB`,
-                    mediaType: 1,
-                    thumbnailUrl: videoInfo.thumbnail,
-                    sourceUrl: videoInfo.url,
-                    renderLargerThumbnail: false
-                }
-            }
-        }, { quoted: info });
+        if (videoId) {
+            videoInfo = await yts({ videoId: videoId }).catch(() => null);
+        } 
 
+        if (!videoInfo) {
+            const search = await yts(q);
+            videoInfo = search.videos.find(v => v.type === 'video');
+        }
+
+        if (!videoInfo) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply("❌ Não encontrei nenhum vídeo.");
+        }
+        
+        if (videoInfo.seconds > 1200) {
+            await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
+            return reply("⚠️ *Vídeo muito longo!* (Máx: 20 min)");
+        }
+
+        // 2. REAÇÃO DE DOWNLOAD
         await nazu.sendMessage(from, { react: { text: '📥', key: info.key } });
 
-        videoFilePath = await downloadYoutubeMp4_Fast(videoInfo.url); 
+        const sizeEstimate = (videoInfo.seconds * 0.15).toFixed(1);
+        const finalUrl = `https://www.youtube.com/watch?v=${videoInfo.videoId}`;
+        
+        videoFilePath = await downloadYoutubeMp4_Fast(finalUrl); 
 
         if (videoFilePath && fs.existsSync(videoFilePath)) {
+            // 3. REAÇÃO DE ENVIO
             await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
 
+            // Card completo para a LEGENDA
+            const videoCaption = [
+                '┏━━━━━━━━━━━━━━━━━━━━┓',
+                '     🎥 *VÍDEO ENCONTRADO* 🎥',
+                '┗━━━━━━━━━━━━━━━━━━━━┛',
+                '',
+                `📝 *Título:* ${videoInfo.title}`,
+                `⏳ *Duração:* ${videoInfo.timestamp}`,
+                `📊 *Peso Est.:* ~${sizeEstimate}MB`,
+                '',
+                '📥 _Enviado com sucesso!_'
+            ].join('\n');
+
+            // 4. ENVIO DO VÍDEO COM LEGENDA E CARD VISUAL
             await nazu.sendMessage(from, { 
                 video: { url: videoFilePath }, 
                 mimetype: 'video/mp4',
-                caption: `✅ *${videoInfo.title}*`
+                caption: videoCaption,
+                contextInfo: {
+                    externalAdReply: {
+                        title: videoInfo.title,
+                        body: `Canal: ${videoInfo.author.name}`,
+                        mediaType: 1,
+                        thumbnailUrl: videoInfo.thumbnail,
+                        sourceUrl: videoInfo.url,
+                        renderLargerThumbnail: true 
+                    }
+                }
             }, { 
                 quoted: info,
                 uploadtimeout: 1000 * 60 * 5 
             });
             
+            // 5. REAÇÃO FINAL DE SUCESSO
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
         }
         
     } catch (error) {
         console.error(error);
-        reply("❌ Erro ao processar vídeo.");
+        await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        reply("❌ Ocorreu um erro ao processar este vídeo.");
     } finally {
         if (videoFilePath && fs.existsSync(videoFilePath)) {
             try { fs.unlinkSync(videoFilePath); } catch (e) {}
@@ -10999,48 +11032,62 @@ case 'video': {
 break;
 }
 case 'play': {
-// if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");
     let filePath = null;
     try {
-        await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
-
         if (!q) {
             await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
-            return reply(`🎵 Digite o nome da música após o comando.`);
+            return reply(`🎵 Digite o nome da música ou cole o link.`);
         }
 
-        const videoInfo = await getVideoMetadata(q);
+        // 1. REAÇÃO DE BUSCA
+        await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
+
+        const yts = (await import('yt-search')).default;
+        let videoInfo = null;
+
+        // --- BUSCA INTELIGENTE (IGUAL AO VÍDEO) ---
+        const match = q.match(/(?:youtu\.be\/|youtube\.com(?:\/(?:v|e|embed)\/|\/.*[?&]v=|\/shorts\/))([^"&?\/\s]{11})/);
+        const videoId = match ? match[1] : null;
+
+        if (videoId) {
+            videoInfo = await yts({ videoId: videoId }).catch(() => null);
+        } 
+
+        if (!videoInfo) {
+            const search = await yts(q);
+            videoInfo = search.videos.find(v => v.type === 'video');
+        }
+
+        if (!videoInfo) {
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            return reply("❌ Música não encontrada.");
+        }
 
         if (videoInfo.seconds > 1800) { 
             await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
             return reply(`⚠️ Muito longo! Máximo 30 min.`);
         }
 
-        await nazu.sendMessage(from, { 
-            text: `🎧 *Buscando:* ${videoInfo.title}`,
-            contextInfo: {
-                externalAdReply: {
-                    title: videoInfo.title,
-                    body: `YouTube Music • ${videoInfo.author}`,
-                    thumbnailUrl: videoInfo.thumbnail,
-                    mediaType: 2,
-                    showAdAttribution: true,
-                    sourceUrl: videoInfo.url
-                }
-            }
-        }, { quoted: info });
+        // 2. REAÇÃO DE DOWNLOAD
+        await nazu.sendMessage(from, { react: { text: '📥', key: info.key } });
 
-        filePath = await downloadYoutubeM4A_Fast(videoInfo.url); 
+        const finalUrl = `https://www.youtube.com/watch?v=${videoInfo.videoId}`;
+        
+        // CHAMA O UTILITÁRIO NOVO (Apenas download, sem metadados lentos)
+        filePath = await downloadYoutubeM4A_Fast(finalUrl); 
 
-        if (filePath) {
+        if (filePath && fs.existsSync(filePath)) {
+            // 3. REAÇÃO DE ENVIO
+            await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
+
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
                 mimetype: 'audio/mp4',
-                ptt: false,
+                ptt: false, 
                 contextInfo: {
                     externalAdReply: {
                         title: videoInfo.title,
-                        body: videoInfo.author,
+                        body: `Canal: ${videoInfo.author.name || videoInfo.author}`,
                         thumbnailUrl: videoInfo.thumbnail,
                         mediaType: 1,
                         renderLargerThumbnail: true,
@@ -11050,20 +11097,20 @@ case 'play': {
                 }
             }, { quoted: info });
             
+            // 4. REAÇÃO DE SUCESSO
             await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
-        } else {
-             throw new Error("Erro no download");
         }
         
     } catch (error) {
         console.error('Erro no comando musica:', error);
         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+        reply("❌ Erro ao processar áudio.");
     } finally {
         if (filePath && fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) {}
         }
     }
-break;
+    break;
 }
       case 'letra':
       case 'lyrics':

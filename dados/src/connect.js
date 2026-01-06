@@ -1054,7 +1054,8 @@ async function createBotSocket(authDir) {
             qrTimeout: 180000,
             keepAliveIntervalMs: 30_000,
             defaultQueryTimeoutMs: undefined,
-            browser: ['Mac OS', 'Safari', '18.6'],
+            // Fingerprint humanizado para Chrome no Windows
+            browser: ['Windows', 'Chrome', '120.0.0.0'],
             msgRetryCounterCache,
             auth: state,
             signalRepository,

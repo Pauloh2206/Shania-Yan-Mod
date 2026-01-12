@@ -11,27 +11,45 @@ if (!fs.existsSync(TEMP_FOLDER)) {
 }
 
 /**
- * DOWNLOAD ULTRA RÁPIDO (Apenas Áudio)
- * Baixa o áudio nativo M4A. É o formato que o WhatsApp mais gosta.
+ * DOWNLOAD COM SISTEMA DE FALLBACK E ANTI-BLOQUEIO
  */
 export async function downloadYoutubeM4A_Fast(videoUrl) {
-    try {
-        const timestamp = Date.now();
-        const fileName = path.join(TEMP_FOLDER, `${timestamp}_audio.m4a`);
+    const timestamp = Date.now();
+    const baseFileName = path.join(TEMP_FOLDER, `${timestamp}_audio`);
+    
+    // Lista de formatos para tentar (mesma lógica que funcionou no seu Replit)
+    const formats = [
+        { format: 'bestaudio[ext=m4a]', ext: '.m4a' },
+        { format: 'bestaudio[ext=mp4]', ext: '.mp4' },
+        { format: 'bestaudio', ext: '.m4a' },
+        { format: 'best', ext: '.m4a' }
+    ];
 
-        // 'bestaudio[ext=m4a]' garante que não haverá conversão pesada de CPU, 
-        // ele apenas baixa o fluxo de áudio já pronto do YouTube.
-        const command = `yt-dlp -f "bestaudio[ext=m4a]/bestaudio" --output "${fileName}" --restrict-filenames "${videoUrl}"`;
+    for (const { format, ext } of formats) {
+        try {
+            const fileName = `${baseFileName}${ext}`;
+            
+            // ADICIONADO: --extractor-args para fingir ser Android (burla o erro de "Sign in")
+            // ADICIONADO: --js-runtimes node para usar o Node como motor JS
+            const command = `yt-dlp -f "${format}" \
+                --extractor-args "youtube:player_client=android,web" \
+                --js-runtimes node \
+                --output "${fileName}" \
+                --restrict-filenames "${videoUrl}"`;
 
-        await execPromise(command, { maxBuffer: 1024 * 1024 * 50 }); // Buffer de 50MB
+            console.log(`Tentando baixar formato: ${format}...`);
+            await execPromise(command, { maxBuffer: 1024 * 1024 * 50 });
 
-        if (!fs.existsSync(fileName)) {
-            throw new Error('Arquivo não encontrado após o download.');
+            if (fs.existsSync(fileName)) {
+                console.log(`✅ Sucesso com formato: ${format}`);
+                return fileName;
+            }
+        } catch (error) {
+            console.warn(`⚠️ Falha no formato ${format}, tentando próximo...`);
+            // Continua para a próxima tentativa do loop
         }
-
-        return fileName;
-    } catch (error) {
-        console.error("Erro no utilitário de áudio:", error);
-        throw error;
     }
+
+    console.error("❌ Todos os formatos falharam.");
+    throw new Error('Não foi possível baixar o áudio. O YouTube pode ter bloqueado este servidor temporariamente.');
 }

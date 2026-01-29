@@ -10,28 +10,35 @@ if (!fs.existsSync(TEMP_FOLDER)) {
     fs.mkdirSync(TEMP_FOLDER, { recursive: true });
 }
 
-/**
- * DOWNLOAD ULTRA RÁPIDO (Apenas Áudio)
- * Baixa o áudio nativo M4A. É o formato que o WhatsApp mais gosta.
- */
 export async function downloadYoutubeM4A_Fast(videoUrl) {
     try {
         const timestamp = Date.now();
         const fileName = path.join(TEMP_FOLDER, `${timestamp}_audio.m4a`);
 
-        // 'bestaudio[ext=m4a]' garante que não haverá conversão pesada de CPU, 
-        // ele apenas baixa o fluxo de áudio já pronto do YouTube.
-        const command = `yt-dlp -f "bestaudio[ext=m4a]/bestaudio" --output "${fileName}" --restrict-filenames "${videoUrl}"`;
+        /**
+         * AJUSTE DEFINITIVO:
+         * 1. --remote-components ejs:github -> Baixa scripts para resolver o erro de "Signature solving failed".
+         * 2. --js-runtimes node -> Usa o Node v22 para processar os desafios.
+         * 3. Mudamos o player_client para usar 'tv' e 'web_embedded', que são os que MENOS pedem PO-Token.
+         */
+        const command = `yt-dlp \
+            --js-runtimes node \
+            --remote-components ejs:github \
+            --extractor-args "youtube:player_client=tv,web_embedded;player_skip=web,android,ios,mweb" \
+            -f "ba[ext=m4a]/ba" \
+            --output "${fileName}" \
+            --restrict-filenames \
+            "${videoUrl}"`;
 
-        await execPromise(command, { maxBuffer: 1024 * 1024 * 50 }); // Buffer de 50MB
+        await execPromise(command, { maxBuffer: 1024 * 1024 * 50 });
 
         if (!fs.existsSync(fileName)) {
-            throw new Error('Arquivo não encontrado após o download.');
+            throw new Error('Arquivo não encontrado.');
         }
 
         return fileName;
     } catch (error) {
-        console.error("Erro no utilitário de áudio:", error);
+        console.error("Erro no utilitário de áudio:", error.message);
         throw error;
     }
 }

@@ -11,26 +11,34 @@ if (!fs.existsSync(TEMP_FOLDER)) {
 }
 
 /**
- * MODO ULTRA FAST: Otimizado para arquivos grandes e conexões instáveis.
- * Evita resoluções exageradas que causariam queda de rede.
+ * DOWNLOAD DE VÍDEO BLINDADO
+ * Otimizado para VPS e Termux, ignorando bloqueios 403.
  */
 export async function downloadYoutubeMp4_Fast(videoUrl) {
     try {
         const timestamp = Date.now();
         const fileName = path.join(TEMP_FOLDER, `${timestamp}_fast.mp4`);
 
-        // Explicação do comando:
-        // 'best[height<=720][ext=mp4]' -> Garante que o vídeo não passe de 720p (HD),
-        // mantendo o tamanho do arquivo equilibrado para o seu limite de 100MB.
-        const command = `yt-dlp -f "best[height<=720][ext=mp4]/best[ext=mp4]/best" --output "${fileName}" --restrict-filenames "${videoUrl}"`;
+        // A MÁGICA ESTÁ AQUI:
+        // 1. --js-runtimes node: Resolve a assinatura JS.
+        // 2. --remote-components ejs:github: Baixa o decifrador de algoritmos.
+        // 3. player_client=tv: O único que não pede PO-Token (GVS) na VPS.
+        const command = `yt-dlp \
+            --js-runtimes node \
+            --remote-components ejs:github \
+            --extractor-args "youtube:player_client=tv,web_embedded;player_skip=web,android,ios,mweb" \
+            -f "best[height<=720][ext=mp4]/best[ext=mp4]/best" \
+            --output "${fileName}" \
+            --restrict-filenames \
+            "${videoUrl}"`;
 
-        await execPromise(command, { maxBuffer: 1024 * 1024 * 100 }); // Buffer de 100MB para o processo
+        await execPromise(command, { maxBuffer: 1024 * 1024 * 100 }); 
 
         if (!fs.existsSync(fileName)) throw new Error("Erro: Arquivo não encontrado após download.");
 
         return fileName;
     } catch (error) {
-        console.error("ERRO NO UTILITÁRIO FAST:", error);
+        console.error("ERRO NO UTILITÁRIO FAST (VÍDEO):", error.message);
         throw error;
     }
 }

@@ -14141,6 +14141,52 @@ _Desenvolvedor: Paulo Hernani (Taki)_`;
     }
     break;
     
+    case 'piada2':
+    try {
+        await nazu.sendMessage(from, { react: { text: '🤡', key: info.key } });
+
+        // 1. Busca uma piada aleatória na JokeAPI (Sem filtros de restrição)
+        // O parâmetro 'blacklistFlags' vazio permite qualquer tipo de piada.
+        const res = await axios.get('https://v2.jokeapi.dev/joke/Any?blacklistFlags=');
+        const jokeData = res.data;
+
+        let piadaOriginal = '';
+        if (jokeData.type === 'single') {
+            piadaOriginal = jokeData.joke;
+        } else {
+            piadaOriginal = `${jokeData.setup}\n\n${jokeData.delivery}`;
+        }
+
+        // 2. Usa o Gemini APENAS para traduzir de forma natural/brasileira
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+        const prompt = `Traduza a seguinte piada para o português brasileiro de forma muito informal, usando gírias se necessário, para que a piada não perca a graça. Mande APENAS a tradução: \n\n${piadaOriginal}`;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            ]
+        });
+
+        const piadaTraduzida = response.text;
+
+        const resultadoFormatado = `*😂 MOMENTO HUMOR*\n\n${piadaTraduzida.trim()}\n\n_— Fonte: JokeAPI & Tradução Gemini_`;
+
+        await nazu.sendMessage(from, { text: resultadoFormatado }, { quoted: info });
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+
+    } catch (e) {
+        console.error("Erro no comando piada:", e);
+        await reply(`❌ Ocorreu um erro ao buscar a piada. Tente novamente.`);
+    }
+    break;
+    
     case 'piada':
     try {
         await nazu.sendMessage(from, { react: { text: '💀', key: info.key } });

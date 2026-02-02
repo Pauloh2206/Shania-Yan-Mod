@@ -14140,6 +14140,53 @@ _Desenvolvedor: Paulo Hernani (Taki)_`;
         await reply(errorMessage);
     }
     break;
+    
+    case 'piada':
+    try {
+        await nazu.sendMessage(from, { react: { text: '💀', key: info.key } });
+
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
+        if (!GEMINI_API_KEY) return reply('❌ Chave não configurada.');
+
+        const rawBodyWithoutPrefix = body.substring(prefix.length).trim();
+        const parts = rawBodyWithoutPrefix.split(/\s+/);
+        const tema = parts.length > 1 ? parts.slice(1).join(' ') : 'qualquer assunto';
+
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
+
+        // PROMPT AGRESSIVO: Força piadas curtas, sem "lição de moral" e sem enrolação.
+        const prompt = `Você é um humorista de boteco, ácido, politicamente incorreto e direto. 
+        Conte uma piada CURTA (estilo pergunta e resposta ou punchline) sobre: ${tema}. 
+        Não dê lição de moral, não seja educado e não faça contos longos. 
+        Mande apenas a piada, sem introdução e sem despedida. 
+        Se o tema for pesado, não tenha medo, mande a piada de humor negro ou sarcástica mesmo.`;
+        
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            // Desativando filtros de segurança para permitir piadas mais pesadas/sem restrição
+            safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            ]
+        });
+        
+        const respostaGemini = response.text;
+
+        // Envio direto e seco
+        await nazu.sendMessage(from, { 
+            text: respostaGemini.trim() 
+        }, { quoted: info });
+        
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
+
+    } catch (e) {
+        console.error("Erro na piada:", e);
+        await reply(`❌ Ocorreu um erro: ${e.message}`);
+    }
+    break;
 
 case 'anime': {
     try {

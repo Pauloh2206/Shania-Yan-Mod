@@ -1,4 +1,4 @@
-import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from 'whaileys';
+Import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from 'whaileys';
 const makeWASocket = a.default;
 import { Boom } from '@hapi/boom';
 import NodeCache from 'node-cache';
@@ -1313,14 +1313,14 @@ async function createBotSocket(authDir) {
                     cacheCleanupInterval = null;
                 }
                 
-                if (reason === DisconnectReason.loggedOut) {
+                if (reason === DisconnectReason.badSession || reason === DisconnectReason.loggedOut) {
                     await clearAuthDir();
-                    console.log('🗑️ Logout detectado pelo celular. Limpando pasta de sessão...');
+                    console.log('🔄 Nova autenticação será necessária na próxima inicialização.');
                 }
                 
                 // Delay antes de reconectar baseado no motivo
                 let reconnectDelay = 5000;
-                if (reason === DisconnectReason.timedOut || reason === 515) {
+                if (reason === DisconnectReason.timedOut) {
                     reconnectDelay = 3000; // Reconexão mais rápida para timeout
                 } else if (reason === DisconnectReason.connectionLost) {
                     reconnectDelay = 2000; // Reconexão ainda mais rápida para perda de conexão

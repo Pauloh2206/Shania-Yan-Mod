@@ -1,5 +1,3 @@
-// connect.js (Código Completo Revisado - Apenas Bem-vindo e Importação)
-
 import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from 'whaileys';
 const makeWASocket = a.default;
 import { Boom } from '@hapi/boom';
@@ -1315,14 +1313,14 @@ async function createBotSocket(authDir) {
                     cacheCleanupInterval = null;
                 }
                 
-                if (reason === DisconnectReason.badSession || reason === DisconnectReason.loggedOut) {
+                if (reason === DisconnectReason.loggedOut) {
                     await clearAuthDir();
-                    console.log('🔄 Nova autenticação será necessária na próxima inicialização.');
+                    console.log('🗑️ Logout detectado pelo celular. Limpando pasta de sessão...');
                 }
                 
                 // Delay antes de reconectar baseado no motivo
                 let reconnectDelay = 5000;
-                if (reason === DisconnectReason.timedOut) {
+                if (reason === DisconnectReason.timedOut || reason === 515) {
                     reconnectDelay = 3000; // Reconexão mais rápida para timeout
                 } else if (reason === DisconnectReason.connectionLost) {
                     reconnectDelay = 2000; // Reconexão ainda mais rápida para perda de conexão

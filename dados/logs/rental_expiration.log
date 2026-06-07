@@ -34,3 +34,5 @@
 [2025-12-06T16:33:57.387Z] RentalExpirationManager initialized successfully
 [2025-12-16T20:27:45.415Z] Scheduler started with interval: 0 */6 * * *
 [2025-12-16T20:27:45.416Z] RentalExpirationManager initialized successfully
+[2026-06-07T13:17:07.097Z] RentalExpirationManager initialized successfully
+[2026-06-07T13:17:07.096Z] Scheduler started with interval: 0 */6 * * *

@@ -1,44 +1,56 @@
 import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { promisify } from 'util';
 
-const execPromise = promisify(exec);
 const TEMP_FOLDER = path.join(process.cwd(), 'temp_downloads');
+const COOKIES_FILE = path.join(process.cwd(), 'youtube-cookies.txt');
 
 if (!fs.existsSync(TEMP_FOLDER)) {
     fs.mkdirSync(TEMP_FOLDER, { recursive: true });
 }
 
-export async function downloadYoutubeM4A_Fast(videoUrl) {
+function fixCookiesFormat(filePath) {
     try {
+        let content = fs.readFileSync(filePath, 'utf8');
+        let lines = content.split(/\r?\n/);
+        let fixedLines = lines.map(line => {
+            if (!line.trim() || line.startsWith('#')) return line;
+            return line.replace(/\s+/g, '\t');
+        });
+        let newContent = fixedLines.join('\n');
+        if (!newContent.startsWith('# Netscape HTTP Cookie File')) {
+            newContent = '# Netscape HTTP Cookie File\n' + newContent;
+        }
+        fs.writeFileSync(filePath, newContent, 'utf8');
+    } catch (e) {}
+}
+
+export async function downloadYoutubeM4A_Fast(videoUrl) {
+    return new Promise((resolve, reject) => {
         const timestamp = Date.now();
-        const fileName = path.join(TEMP_FOLDER, `${timestamp}_audio.m4a`);
+        // Mudamos para gerar .mp3 puro para garantir o envio
+        const outputPath = path.join(TEMP_FOLDER, `${timestamp}_audio.mp3`);
 
-        /**
-         * AJUSTE DEFINITIVO:
-         * 1. --remote-components ejs:github -> Baixa scripts para resolver o erro de "Signature solving failed".
-         * 2. --js-runtimes node -> Usa o Node v22 para processar os desafios.
-         * 3. Mudamos o player_client para usar 'tv' e 'web_embedded', que são os que MENOS pedem PO-Token.
-         */
-        const command = `yt-dlp \
-            --js-runtimes node \
-            --remote-components ejs:github \
-            --extractor-args "youtube:player_client=tv,web_embedded;player_skip=web,android,ios,mweb" \
-            -f "ba[ext=m4a]/ba" \
-            --output "${fileName}" \
-            --restrict-filenames \
-            "${videoUrl}"`;
-
-        await execPromise(command, { maxBuffer: 1024 * 1024 * 50 });
-
-        if (!fs.existsSync(fileName)) {
-            throw new Error('Arquivo não encontrado.');
+        let cookiesParam = '';
+        if (fs.existsSync(COOKIES_FILE)) {
+            fixCookiesFormat(COOKIES_FILE);
+            cookiesParam = `--cookies "${COOKIES_FILE}"`;
         }
 
-        return fileName;
-    } catch (error) {
-        console.error("Erro no utilitário de áudio:", error.message);
-        throw error;
-    }
+        // Motor idêntico ao seu play2 que funciona 100%
+        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[Utilitário de Áudio ERRO]: ${stderr}`);
+                return reject(error);
+            }
+
+            if (!fs.existsSync(outputPath)) {
+                return reject(new Error('Arquivo mp3 não foi gerado pelo FFmpeg.'));
+            }
+
+            resolve(outputPath);
+        });
+    });
 }

@@ -10881,43 +10881,43 @@ case 'video': {
         const sizeEstimate = (videoInfo.seconds * 0.15).toFixed(1);
         const finalUrl = `https://www.youtube.com/watch?v=${videoInfo.videoId}`;
         
+        // Chama o utilitário protegido com os seus cookies
         videoFilePath = await downloadYoutubeMp4_Fast(finalUrl); 
 
         if (videoFilePath && fs.existsSync(videoFilePath)) {
             // 3. REAÇÃO DE ENVIO
             await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
 
-            // Card completo para a LEGENDA
+            const authorName = videoInfo.author ? (videoInfo.author.name || videoInfo.author) : 'Desconhecido';
+
+            // Card descritivo completo para a legenda da Imagem
             const videoCaption = [
                 '┏━━━━━━━━━━━━━━━━━━━━┓',
                 '     🎥 *VÍDEO ENCONTRADO* 🎥',
                 '┗━━━━━━━━━━━━━━━━━━━━┛',
                 '',
                 `📝 *Título:* ${videoInfo.title}`,
+                `👤 *Canal:* ${authorName}`,
                 `⏳ *Duração:* ${videoInfo.timestamp}`,
                 `📊 *Peso Est.:* ~${sizeEstimate}MB`,
+                `🔗 *Link:* ${videoInfo.url}`,
                 '',
-                '📥 _Enviado com sucesso!_'
+                '📥 _Enviando arquivo abaixo..._'
             ].join('\n');
 
-            // 4. ENVIO DO VÍDEO COM LEGENDA E CARD VISUAL
+            // --- PASSO 1: ENVIA O CARD DE INFORMAÇÕES COM A CAPA EM ALTA QUALIDADE ---
+            await nazu.sendMessage(from, { 
+                image: { url: videoInfo.thumbnail }, 
+                caption: videoCaption 
+            }, { quoted: info });
+
+            // --- PASSO 2: ENVIA O VÍDEO MP4 PURO (MÉTODO ULTRA ESTÁVEL) ---
             await nazu.sendMessage(from, { 
                 video: { url: videoFilePath }, 
-                mimetype: 'video/mp4',
-                caption: videoCaption,
-                contextInfo: {
-                    externalAdReply: {
-                        title: videoInfo.title,
-                        body: `Canal: ${videoInfo.author.name}`,
-                        mediaType: 1,
-                        thumbnailUrl: videoInfo.thumbnail,
-                        sourceUrl: videoInfo.url,
-                        renderLargerThumbnail: true 
-                    }
-                }
+                mimetype: 'video/mp4'
             }, { 
                 quoted: info,
-                uploadtimeout: 1000 * 60 * 5 
+                uploadtimeout: 1000 * 60 * 5 // 5 minutos de tolerância para upload no Termux
             });
             
             // 5. REAÇÃO FINAL DE SUCESSO
@@ -10925,9 +10925,9 @@ case 'video': {
         }
         
     } catch (error) {
-        console.error(error);
+        console.error("Erro no comando video:", error);
         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-        reply("❌ Ocorreu um erro ao processar este vídeo.");
+        reply("❌ Ocorreu um erro ao processar ou enviar este vídeo.");
     } finally {
         if (videoFilePath && fs.existsSync(videoFilePath)) {
             try { fs.unlinkSync(videoFilePath); } catch (e) {}
@@ -11045,7 +11045,7 @@ case 'play': {
         const yts = (await import('yt-search')).default;
         let videoInfo = null;
 
-        // --- BUSCA INTELIGENTE (IGUAL AO VÍDEO) ---
+        // --- BUSCA INTELIGENTE ---
         const match = q.match(/(?:youtu\.be\/|youtube\.com(?:\/(?:v|e|embed)\/|\/.*[?&]v=|\/shorts\/))([^"&?\/\s]{11})/);
         const videoId = match ? match[1] : null;
 
@@ -11073,28 +11073,31 @@ case 'play': {
 
         const finalUrl = `https://www.youtube.com/watch?v=${videoInfo.videoId}`;
         
-        // CHAMA O UTILITÁRIO NOVO (Apenas download, sem metadados lentos)
+        // CHAMA O UTILITÁRIO QUE FAZ O MP3 SEGURO VIA PIPE
         filePath = await downloadYoutubeM4A_Fast(finalUrl); 
 
         if (filePath && fs.existsSync(filePath)) {
             // 3. REAÇÃO DE ENVIO
             await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
 
+            const authorName = videoInfo.author ? (videoInfo.author.name || videoInfo.author) : 'Desconhecido';
+
+            // --- PASSO EXTRA: ENVIA O CARD INFORMATIVO COM A CAPA (100% ESTÁVEL) ---
+            const infoTexto = `📝 *Título:* ${videoInfo.title}\n` +
+                              `👤 *Canal:* ${authorName}\n` +
+                              `⏳ *Duração:* ${videoInfo.timestamp}\n\n` +
+                              `🔗 *Link:* ${videoInfo.url}`;
+
+            await nazu.sendMessage(from, { 
+                image: { url: videoInfo.thumbnail }, 
+                caption: infoTexto 
+            }, { quoted: info });
+
+            // --- PASSO SEGUINTE: ENVIA O ÁUDIO PURO (MÉTODO DO PLAY2) ---
             await nazu.sendMessage(from, { 
                 audio: { url: filePath }, 
-                mimetype: 'audio/mp4',
-                ptt: false, 
-                contextInfo: {
-                    externalAdReply: {
-                        title: videoInfo.title,
-                        body: `Canal: ${videoInfo.author.name || videoInfo.author}`,
-                        thumbnailUrl: videoInfo.thumbnail,
-                        mediaType: 1,
-                        renderLargerThumbnail: true,
-                        showAdAttribution: false,
-                        sourceUrl: videoInfo.url
-                    }
-                }
+                mimetype: 'audio/mpeg', // MP3 legítimo, sem máscaras que causam rejeição
+                ptt: false
             }, { quoted: info });
             
             // 4. REAÇÃO DE SUCESSO
@@ -11104,7 +11107,7 @@ case 'play': {
     } catch (error) {
         console.error('Erro no comando musica:', error);
         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-        reply("❌ Erro ao processar áudio.");
+        reply("❌ Erro ao processar ou enviar a música.");
     } finally {
         if (filePath && fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) {}

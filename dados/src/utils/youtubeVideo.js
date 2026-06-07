@@ -5,7 +5,7 @@ import { promisify } from 'util';
 
 const execPromise = promisify(exec);
 const TEMP_FOLDER = path.join(process.cwd(), 'temp_downloads');
-const COOKIES_FILE = path.join(process.cwd(), 'youtube-cookies.txt');
+const COOKIES_FILE = path.resolve(process.cwd(), 'youtube-cookies.txt');
 
 if (!fs.existsSync(TEMP_FOLDER)) {
     fs.mkdirSync(TEMP_FOLDER, { recursive: true });
@@ -24,7 +24,9 @@ function fixCookiesFormat(filePath) {
             newContent = '# Netscape HTTP Cookie File\n' + newContent;
         }
         fs.writeFileSync(filePath, newContent, 'utf8');
-    } catch (e) {}
+    } catch (e) {
+        console.error("[Utilitário de Vídeo] Erro ao formatar cookies:", e.message);
+    }
 }
 
 export async function downloadYoutubeMp4_Fast(videoUrl) {
@@ -39,14 +41,16 @@ export async function downloadYoutubeMp4_Fast(videoUrl) {
         }
 
         /**
-         * MOTOR DE DOWNLOAD BLINDADO (VÍDEO)
-         * Adicionado o mapeamento de runtime dinâmico também no vídeo para evitar quebras na VPS.
+         * MOTOR DE VÍDEO BLINDADO PARA VPS (AWS/UBUNTU)
+         * - extractor-args sincronizado idêntico ao de áudio para manter consistência na AWS
+         * - Limite de 720p para garantir velocidade de download e envio estável no WhatsApp
          */
         const command = `yt-dlp \
             ${cookiesParam} \
             --no-warnings \
             --js-runtimes "node:${process.execPath}" \
             --remote-components ejs:github \
+            --extractor-args "youtube:player_client=android_embedded,web" \
             -f "best[height<=720][ext=mp4]/best[ext=mp4]/best" \
             --output "${fileName}" \
             --restrict-filenames \

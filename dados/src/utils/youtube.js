@@ -3,7 +3,8 @@ import path from 'path';
 import fs from 'fs';
 
 const TEMP_FOLDER = path.join(process.cwd(), 'temp_downloads');
-const COOKIES_FILE = path.join(process.cwd(), 'youtube-cookies.txt');
+// Força o caminho absoluto completo para o processo do PM2 não se perder na VPS
+const COOKIES_FILE = path.resolve(process.cwd(), 'youtube-cookies.txt');
 
 if (!fs.existsSync(TEMP_FOLDER)) {
     fs.mkdirSync(TEMP_FOLDER, { recursive: true });
@@ -22,7 +23,9 @@ function fixCookiesFormat(filePath) {
             newContent = '# Netscape HTTP Cookie File\n' + newContent;
         }
         fs.writeFileSync(filePath, newContent, 'utf8');
-    } catch (e) {}
+    } catch (e) {
+        console.error("[Utilitário de Áudio] Erro ao formatar cookies:", e.message);
+    }
 }
 
 export async function downloadYoutubeM4A_Fast(videoUrl) {
@@ -37,10 +40,11 @@ export async function downloadYoutubeM4A_Fast(videoUrl) {
         }
 
         /**
-         * MOTOR DE DOWNLOAD BLINDADO (ÁUDIO)
-         * --js-runtimes "node:${process.execPath}": Resolve o erro de Runtime do JS no Ubuntu VPS de forma definitiva.
+         * MOTOR DE ÁUDIO BLINDADO PARA VPS (AWS/UBUNTU)
+         * - extractor-args modificado para android_embedded,web (bula a trava de IP da VPS)
+         * - js-runtimes amarrado ao process.execPath (evita erro de falta de runtime JS)
          */
-        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate --js-runtimes "node:${process.execPath}" --remote-components ejs:github -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
+        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate --js-runtimes "node:${process.execPath}" --remote-components ejs:github --extractor-args "youtube:player_client=android_embedded,web" -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {

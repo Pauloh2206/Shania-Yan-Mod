@@ -28,7 +28,6 @@ function fixCookiesFormat(filePath) {
 export async function downloadYoutubeM4A_Fast(videoUrl) {
     return new Promise((resolve, reject) => {
         const timestamp = Date.now();
-        // Mudamos para gerar .mp3 puro para garantir o envio
         const outputPath = path.join(TEMP_FOLDER, `${timestamp}_audio.mp3`);
 
         let cookiesParam = '';
@@ -37,8 +36,11 @@ export async function downloadYoutubeM4A_Fast(videoUrl) {
             cookiesParam = `--cookies "${COOKIES_FILE}"`;
         }
 
-        // Motor idêntico ao seu play2 que funciona 100%
-        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
+        /**
+         * MOTOR DE DOWNLOAD BLINDADO (ÁUDIO)
+         * --js-runtimes "node:${process.execPath}": Resolve o erro de Runtime do JS no Ubuntu VPS de forma definitiva.
+         */
+        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate --js-runtimes "node:${process.execPath}" --remote-components ejs:github -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {

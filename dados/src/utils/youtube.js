@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 
 const TEMP_FOLDER = path.join(process.cwd(), 'temp_downloads');
-// Força o caminho absoluto completo para o processo do PM2 não se perder na VPS
 const COOKIES_FILE = path.resolve(process.cwd(), 'youtube-cookies.txt');
 
 if (!fs.existsSync(TEMP_FOLDER)) {
@@ -40,11 +39,11 @@ export async function downloadYoutubeM4A_Fast(videoUrl) {
         }
 
         /**
-         * MOTOR DE ÁUDIO BLINDADO PARA VPS (AWS/UBUNTU)
-         * - extractor-args modificado para android_embedded,web (bula a trava de IP da VPS)
-         * - js-runtimes amarrado ao process.execPath (evita erro de falta de runtime JS)
+         * AJUSTE DE COMBINAÇÃO DE CLIENTES SUPORTADOS
+         * Alterado android_embedded para android convencional combinado com web.
+         * Isso simula a mesma assinatura de requisição mista que funciona no Termux.
          */
-        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate --js-runtimes "node:${process.execPath}" --remote-components ejs:github --extractor-args "youtube:player_client=android_embedded,web" -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
+        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate --js-runtimes "node:${process.execPath}" --remote-components ejs:github --extractor-args "youtube:player_client=android,web" -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {

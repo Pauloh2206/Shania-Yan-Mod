@@ -1,0 +1,97 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-27T18:36:35.068Z",
+  "groupName": "Resenha dos manos e manas",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "156092483039442@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "neys85645",
+      "firstSeen": "2025-11-27T18:36:35.075Z",
+      "lastActivity": "2025-11-27T18:36:35.075Z"
+    },
+    {
+      "id": "253485161418761@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "★⃟🟣 LUCAS★⃟🎌",
+      "firstSeen": "2025-11-28T12:51:39.067Z",
+      "lastActivity": "2025-11-28T12:51:39.067Z"
+    },
+    {
+      "id": "143164815982804@lid",
+      "msg": 2,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Isaque😁",
+      "firstSeen": "2025-11-29T20:02:19.969Z",
+      "lastActivity": "2025-11-29T20:02:23.537Z"
+    },
+    {
+      "id": "86239269130356@lid",
+      "msg": 2,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "♕ᴄᴏʀɪɴɢᴀ sᴏᴍʙʀɪᴏ♕",
+      "firstSeen": "2025-11-29T20:03:12.339Z",
+      "lastActivity": "2025-11-29T20:03:45.763Z"
+    },
+    {
+      "id": "231378981515422@lid",
+      "msg": 3,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Dhwllya_🧸💐",
+      "firstSeen": "2025-11-29T20:03:28.038Z",
+      "lastActivity": "2025-12-02T01:54:33.204Z"
+    },
+    {
+      "id": "182137248571500@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 1,
+      "pushname": "didi",
+      "firstSeen": "2025-11-29T20:03:28.382Z",
+      "lastActivity": "2025-11-29T20:03:35.791Z"
+    },
+    {
+      "id": "21947685568766@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 1,
+      "pushname": "Dami",
+      "firstSeen": "2025-12-02T00:55:28.467Z",
+      "lastActivity": "2025-12-02T00:55:28.468Z"
+    },
+    {
+      "id": "44075575165154@lid",
+      "msg": 3,
+      "cmd": 0,
+      "figu": 3,
+      "pushname": "ꪶ͢👑⃟⃤BLACK.ofc",
+      "firstSeen": "2025-12-02T01:52:23.029Z",
+      "lastActivity": "2025-12-02T01:56:48.308Z"
+    }
+  ]
+}

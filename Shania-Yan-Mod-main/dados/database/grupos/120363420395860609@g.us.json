@@ -1,0 +1,97 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-17T23:54:47.879Z",
+  "groupName": "EQUIPE ROSA",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "96795711512821@lid",
+      "msg": 44,
+      "cmd": 10,
+      "figu": 2,
+      "pushname": "coimbra",
+      "firstSeen": "2025-11-17T23:54:47.880Z",
+      "lastActivity": "2025-11-18T00:37:39.836Z"
+    },
+    {
+      "id": "221964228661497@lid",
+      "msg": 10,
+      "cmd": 0,
+      "figu": 1,
+      "pushname": "Kaique",
+      "firstSeen": "2025-11-17T23:57:41.481Z",
+      "lastActivity": "2025-11-18T00:33:55.248Z"
+    },
+    {
+      "id": "268706609418354@lid",
+      "msg": 9,
+      "cmd": 1,
+      "figu": 0,
+      "pushname": "BOT TAKI",
+      "firstSeen": "2025-11-17T23:58:23.476Z",
+      "lastActivity": "2025-11-18T00:14:33.044Z"
+    },
+    {
+      "id": "76506302795900@lid",
+      "msg": 6,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "rakelly",
+      "firstSeen": "2025-11-17T23:58:26.691Z",
+      "lastActivity": "2025-11-18T00:00:36.458Z"
+    },
+    {
+      "id": "197478385233975@lid",
+      "msg": 1,
+      "cmd": 1,
+      "figu": 3,
+      "pushname": "Luis",
+      "firstSeen": "2025-11-18T00:00:41.360Z",
+      "lastActivity": "2025-11-18T00:08:06.947Z"
+    },
+    {
+      "id": "181101876244611@lid",
+      "msg": 2,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "ge",
+      "firstSeen": "2025-11-18T00:28:34.471Z",
+      "lastActivity": "2025-11-18T00:36:11.542Z"
+    },
+    {
+      "id": "108392341340227@lid",
+      "msg": 3,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Beatriz Bianca",
+      "firstSeen": "2025-11-18T00:29:19.717Z",
+      "lastActivity": "2025-11-18T00:34:02.609Z"
+    },
+    {
+      "id": "254799605985524@lid",
+      "msg": 8,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Moraes",
+      "firstSeen": "2025-11-18T00:33:34.697Z",
+      "lastActivity": "2025-11-18T00:34:26.263Z"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-11T15:53:52.680Z",
+  "groupName": "💓 Amores ❤️",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "155070331113702@lid",
+      "msg": 19,
+      "cmd": 12,
+      "figu": 2,
+      "pushname": "L7",
+      "firstSeen": "2025-11-11T15:53:52.680Z",
+      "lastActivity": "2025-11-11T16:06:04.564Z"
+    },
+    {
+      "id": "115853051822261@lid",
+      "msg": 21,
+      "cmd": 1,
+      "figu": 1,
+      "pushname": "𝕁𝕠𝕤é ℝ.",
+      "firstSeen": "2025-11-11T15:53:53.262Z",
+      "lastActivity": "2025-11-11T16:05:40.553Z"
+    },
+    {
+      "id": "90955143192742@lid",
+      "msg": 12,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Iza 🎀",
+      "firstSeen": "2025-11-11T16:00:52.929Z",
+      "lastActivity": "2025-11-11T16:06:07.244Z"
+    }
+  ]
+}

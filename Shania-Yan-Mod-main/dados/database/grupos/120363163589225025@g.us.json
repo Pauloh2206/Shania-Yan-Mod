@@ -1,0 +1,125 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-07T21:33:52.955Z",
+  "groupName": "Formação angolana",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "280049601278042@lid",
+      "msg": 603,
+      "cmd": 10,
+      "figu": 56,
+      "pushname": ".",
+      "firstSeen": "2025-11-07T21:33:52.956Z",
+      "lastActivity": "2025-12-06T12:43:11.555Z"
+    },
+    {
+      "id": "90705833771247@lid",
+      "msg": 801,
+      "cmd": 8,
+      "figu": 37,
+      "pushname": ".",
+      "firstSeen": "2025-11-07T21:59:20.256Z",
+      "lastActivity": "2025-12-06T16:43:28.544Z"
+    },
+    {
+      "id": "187647523864792@lid",
+      "msg": 122,
+      "cmd": 4,
+      "figu": 17,
+      "pushname": "Guilherme",
+      "firstSeen": "2025-11-07T21:59:49.462Z",
+      "lastActivity": "2025-12-04T11:09:42.724Z"
+    },
+    {
+      "id": "27457759522949@lid",
+      "msg": 384,
+      "cmd": 1,
+      "figu": 8,
+      "pushname": "Guilherme Perez",
+      "firstSeen": "2025-11-07T22:00:21.138Z",
+      "lastActivity": "2025-12-06T16:43:21.871Z"
+    },
+    {
+      "id": "224975285968957@lid",
+      "msg": 25,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "ㅤ",
+      "firstSeen": "2025-11-08T00:39:11.327Z",
+      "lastActivity": "2025-12-05T11:49:05.956Z"
+    },
+    {
+      "id": "26964375130288@lid",
+      "msg": 125,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Luiz",
+      "firstSeen": "2025-11-08T00:50:48.599Z",
+      "lastActivity": "2025-12-05T13:53:58.994Z"
+    },
+    {
+      "id": "145058410033345@lid",
+      "msg": 291,
+      "cmd": 5,
+      "figu": 6,
+      "pushname": "JV",
+      "firstSeen": "2025-11-08T09:21:57.969Z",
+      "lastActivity": "2025-12-06T12:40:55.934Z"
+    },
+    {
+      "id": "222823339532469@lid",
+      "msg": 60,
+      "cmd": 9,
+      "figu": 6,
+      "pushname": "•Ƥα𝚞ℓo",
+      "firstSeen": "2025-11-11T13:46:15.712Z",
+      "lastActivity": "2025-12-05T20:48:48.485Z"
+    },
+    {
+      "id": "27625833648146@lid",
+      "msg": 2,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "BOT MUSIC",
+      "firstSeen": "2025-11-11T13:46:18.232Z",
+      "lastActivity": "2025-11-13T14:01:15.747Z"
+    },
+    {
+      "id": "250572854820993@lid",
+      "msg": 18,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "Shania Yan Music",
+      "firstSeen": "2025-11-17T01:42:37.955Z",
+      "lastActivity": "2025-11-27T00:13:53.818Z"
+    },
+    {
+      "id": "268706609418354@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 1,
+      "pushname": "𝐓𝐚𝐤𝐢-𝐁𝐨𝐭",
+      "firstSeen": "2025-12-04T10:55:37.417Z",
+      "lastActivity": "2025-12-04T10:55:37.417Z"
+    }
+  ],
+  "soadm": false
+}

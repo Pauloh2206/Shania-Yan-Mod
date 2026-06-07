@@ -1,0 +1,37 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-24T08:20:30.799Z",
+  "groupName": "GP DO SSSANTZ",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "249237589733514@lid",
+      "msg": 10,
+      "cmd": 5,
+      "figu": 0,
+      "pushname": "sssantz",
+      "firstSeen": "2025-11-24T08:20:30.799Z",
+      "lastActivity": "2025-11-24T08:25:19.208Z"
+    }
+  ],
+  "antilinkhard": false,
+  "bemvindo": false,
+  "textbv": "COMO FUNCIONA?\n\nfunciona assim, eu vou abrir o grupo pra voces manda o link d voces aq( apenas uma vez), ai eu vou pegar esse link e manda tudo naqle grupo la"
+}

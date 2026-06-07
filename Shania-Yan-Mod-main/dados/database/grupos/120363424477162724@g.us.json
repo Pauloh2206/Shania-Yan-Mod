@@ -1,0 +1,34 @@
+{
+  "mark": {},
+  "createdAt": "2025-11-18T00:23:12.874Z",
+  "groupName": ".",
+  "modorpg": false,
+  "minMessage": null,
+  "moderators": [],
+  "allowedModCommands": [],
+  "mutedUsers": {},
+  "levelingEnabled": false,
+  "adminWhitelist": {},
+  "roles": {},
+  "roleMessages": {},
+  "resenha": {
+    "active": false,
+    "createdAt": null,
+    "createdBy": null,
+    "link": "",
+    "items": [],
+    "payments": {},
+    "lastItemId": 0
+  },
+  "contador": [
+    {
+      "id": "96795711512821@lid",
+      "msg": 2,
+      "cmd": 2,
+      "figu": 0,
+      "pushname": "coimbra",
+      "firstSeen": "2025-11-18T00:23:12.875Z",
+      "lastActivity": "2025-11-18T00:36:01.692Z"
+    }
+  ]
+}

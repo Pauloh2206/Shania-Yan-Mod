@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 const TEMP_FOLDER = path.join(process.cwd(), 'temp_downloads');
-const COOKIES_FILE = path.resolve(process.cwd(), 'youtube-cookies.txt');
+const COOKIES_FILE = path.join(process.cwd(), 'youtube-cookies.txt');
 
 if (!fs.existsSync(TEMP_FOLDER)) {
     fs.mkdirSync(TEMP_FOLDER, { recursive: true });
@@ -22,14 +22,13 @@ function fixCookiesFormat(filePath) {
             newContent = '# Netscape HTTP Cookie File\n' + newContent;
         }
         fs.writeFileSync(filePath, newContent, 'utf8');
-    } catch (e) {
-        console.error("[Utilitário de Áudio] Erro ao formatar cookies:", e.message);
-    }
+    } catch (e) {}
 }
 
 export async function downloadYoutubeM4A_Fast(videoUrl) {
     return new Promise((resolve, reject) => {
         const timestamp = Date.now();
+        // Mudamos para gerar .mp3 puro para garantir o envio
         const outputPath = path.join(TEMP_FOLDER, `${timestamp}_audio.mp3`);
 
         let cookiesParam = '';
@@ -38,12 +37,8 @@ export async function downloadYoutubeM4A_Fast(videoUrl) {
             cookiesParam = `--cookies "${COOKIES_FILE}"`;
         }
 
-        /**
-         * AJUSTE DE COMBINAÇÃO DE CLIENTES SUPORTADOS
-         * Alterado android_embedded para android convencional combinado com web.
-         * Isso simula a mesma assinatura de requisição mista que funciona no Termux.
-         */
-        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate --js-runtimes "node:${process.execPath}" --remote-components ejs:github --extractor-args "youtube:player_client=android,web" -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
+        // Motor idêntico ao seu play2 que funciona 100%
+        const command = `yt-dlp ${cookiesParam} --no-playlist --no-check-certificate -f "ba" -o - "${videoUrl}" | ffmpeg -i pipe:0 -vn -acodec libmp3lame -ab 128k -preset ultrafast -threads 0 -f mp3 "${outputPath}"`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {

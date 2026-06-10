@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getForcaIA, renderForca } from './utils/forca.js';
 import { getQuizIA } from './utils/quiz.js';
-import { downloadMp3V2 } from './utils/youtube_v2.js';
+import { youtubeV2Module } from './utils/youtube_v2.js';
 import { autoWarnUser } from './utils/autoWarn.js';
 import { downloadYoutubeMp4_Fast } from './utils/youtubeVideo.js';
 import Jimp from 'jimp';
@@ -10936,98 +10936,46 @@ case 'video': {
     break;
 }
         case 'play2':
-        case 'musica2': {
-    //if (!isOwner && !isSubOwner) return reply("🚫 Apenas Donos e Subdonos podem usar este comando!");    
-    if (!q) return reply(`🎵 *YOUTUBE PLAYER (V2)* 🎵\n\n📝 Digite o nome da música.`);
+case 'musica2': {
+    if (!q) return reply(`🎵 *YOUTUBE PLAYER (V2)* 🎵\n\n📝 Digite o nome da música ou link.`);
 
     try {
         const yts = (await import('yt-search')).default;
-        const isGroup = from.endsWith('@g.us'); 
-
+        
+        // 1. Reação de busca
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
         
         const search = await yts(q);
         const video = search.videos[0];
-        if (!video) return reply("❌ Não encontrei resultados.");
+        if (!video) return reply("❌ Não encontrei resultados para essa busca.");
 
-        if (!global.waitPlay2) global.waitPlay2 = {};
-        global.waitPlay2[from] = {
-            url: video.url,
-            titulo: video.title,
-            thumbnail: video.thumbnail,
-            autor: video.author.name,
-            usuarioId: info.sender || info.key.participant || info.key.remoteJid
-        };
+        // Envia uma prévia de texto avisando que começou a baixar
+        await reply(`⏳ *Baixando áudio...*\n📌 *Música:* ${video.title}\n⏱️ *Duração:* ${video.timestamp}`);
 
-        if (!isGroup) {
-            // --- MODO PV: LISTA ---
-            const sections = [{
-                title: "💎 QUALIDADES DISPONÍVEIS",
-                rows: [
-                    {title: "Qualidade 64kbps", rowId: "1", description: "Mais rápido ⚡ (Recomendado)"},
-                    {title: "Qualidade 128kbps", rowId: "2", description: "Padrão 🎧 (Equilibrado)"},
-                    {title: "Qualidade 192kbps", rowId: "3", description: "Alta Definição ✨"},
-                    {title: "Qualidade 320kbps", rowId: "4", description: "Qualidade Máxima 🔥"},
-                    {title: "Qualidade 96kbps", rowId: "5", description: "Otimizado para iPhone 🍎"}
-                ]
-            }];
+        // 2. Reação de download iniciando
+        await nazu.sendMessage(from, { react: { text: '📥', key: info.key } });
+        
+        // Chama a função direto, já que o módulo foi importado globalmente no topo do arquivo
+        const resultado = await youtubeV2Module.download(video.url);
 
-            await nazu.sendMessage(from, {
-                text: `🎵 *𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗨𝗦𝗜𝗖 𝗩𝟮*\n\n📌 *Música:* ${video.title}\n⏱️ *Duração:* ${video.timestamp}\n\nSelecione a qualidade no botão abaixo:`,
-                footer: "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs",
-                buttonText: "Selecionar Qualidade",
-                sections,
-                contextInfo: {
-                    externalAdReply: {
-                        title: video.title,
-                        body: `Canal: ${video.author.name}`,
-                        thumbnailUrl: video.thumbnail,
-                        mediaType: 1,
-                        renderLargerThumbnail: false,
-                        sourceUrl: video.url
-                    }
-                }
+        if (resultado.ok) {
+            // 3. Reação de sucesso e envio do arquivo
+            await nazu.sendMessage(from, { react: { text: '🎵', key: info.key } });
+            
+            await nazu.sendMessage(from, { 
+                audio: resultado.buffer, 
+                mimetype: 'audio/mpeg',
+                fileName: `${video.title}.mp3`
             }, { quoted: info });
 
         } else {
-            // --- MODO GRUPO: MENU TEXTO COM TODAS AS INFORMAÇÕES ---
-            const menuTexto = `🎵 *𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗨𝗦𝗜𝗖 𝗩𝟮* 🎵\n\n` +
-                `📌 *Música:* ${video.title}\n` + 
-                `⏱️ *Duração:* ${video.timestamp}\n\n` +
-                `Responda com o número da qualidade:\n\n` +
-                `[ 1 ] ‣ *64kbps* (Recomendado ✅)\n` +
-                `[ 2 ] ‣ *128kbps* (Padrão 🎧)\n` +
-                `[ 3 ] ‣ *192kbps* (Alta Qualidade ✨)\n` +
-                `[ 4 ] ‣ *320kbps* (Qualidade Máxima 🔥)\n` +
-                `[ 5 ] ‣ *96kbps* (*Para iPhone* 🍎)\n\n` +
-                `⏳ _Sua solicitação expira em 2 minutos._\n\n` +
-                `ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs`;
-
-            await nazu.sendMessage(from, { 
-                text: menuTexto,
-                contextInfo: {
-                    externalAdReply: {
-                        title: video.title,
-                        body: `Canal: ${video.author.name}`,
-                        thumbnailUrl: video.thumbnail,
-                        mediaType: 1,
-                        renderLargerThumbnail: false,
-                        sourceUrl: video.url,
-                        showAdAttribution: true
-                    }
-                }
-            }, { quoted: info });
+            await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
+            reply(`❌ ${resultado.msg}`);
         }
 
-        setTimeout(() => {
-            if (global.waitPlay2[from] && global.waitPlay2[from].url === video.url) {
-                delete global.waitPlay2[from];
-            }
-        }, 120000); 
-
     } catch (error) {
-        console.error("Erro Play2:", error);
-        reply(`❌ Erro ao buscar informações.`);
+        console.error("Erro Play2 Direto:", error);
+        reply(`❌ Erro inesperado ao processar o player.`);
     }
 break;
 }

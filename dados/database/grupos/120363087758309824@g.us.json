@@ -1,7 +1,7 @@
 {
   "mark": {},
   "createdAt": "2025-11-09T11:04:24.770Z",
-  "groupName": "Os aleatoriamente! 🤡",
+  "groupName": "TRIO DOS PICA🪂",
   "modorpg": false,
   "minMessage": null,
   "moderators": [],
@@ -32,12 +32,12 @@
     },
     {
       "id": "26629048918042@lid",
-      "msg": 44,
-      "cmd": 0,
+      "msg": 55,
+      "cmd": 1,
       "figu": 7,
       "pushname": "Mendezz",
       "firstSeen": "2025-11-09T11:04:47.801Z",
-      "lastActivity": "2025-11-26T20:10:51.483Z"
+      "lastActivity": "2026-06-08T12:20:35.965Z"
     },
     {
       "id": "264922910949614@lid",
@@ -56,6 +56,15 @@
       "pushname": "Bispo",
       "firstSeen": "2025-11-19T09:59:46.914Z",
       "lastActivity": "2025-11-23T21:38:05.089Z"
+    },
+    {
+      "id": "241390751596744@lid",
+      "msg": 6,
+      "cmd": 2,
+      "figu": 1,
+      "pushname": "Paulo",
+      "firstSeen": "2026-06-07T16:22:51.512Z",
+      "lastActivity": "2026-06-08T12:20:32.468Z"
     }
   ],
   "antibtn": false,

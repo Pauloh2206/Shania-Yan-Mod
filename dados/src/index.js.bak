@@ -11080,35 +11080,35 @@ case 'help':
 case 'comandos':
 case 'commands':
     try {
-        const menuImagePath = __dirname + '/../midias/menu.jpg';
-        const menuVideoPath = __dirname + '/../midias/menu.mp4';
-        
-        const useVideo = fs.existsSync(menuVideoPath);
-        const mediaPath = useVideo ? menuVideoPath : menuImagePath;
+        const tituloDoc = "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs"; 
+        const corpoDoc = "666 KB • TXT"; 
 
+        const menuImagePath = __dirname + '/../midias/menu.jpg';
         const menuText = await menu(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname));
         
         await nazu.sendMessage(from, { react: { text: '🍥', key: info.key } });
-       
-        const messageOptions = {
-            caption: menuText,
-            contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true // Mantém a tag de "Encaminhada" se você curtir o visual
-            }
-        };
 
-        if (useVideo) {
-            messageOptions.video = fs.readFileSync(menuVideoPath);
-            messageOptions.mimetype = 'video/mp4';
-            messageOptions.gifPlayback = true;
-        } else if (fs.existsSync(menuImagePath)) {
-            messageOptions.image = fs.readFileSync(menuImagePath);
-            messageOptions.mimetype = 'image/jpeg';
+        // 1. Envia a imagem do menu primeiro
+        if (fs.existsSync(menuImagePath)) {
+            await nazu.sendMessage(from, { image: fs.readFileSync(menuImagePath) }, { quoted: info });
         }
 
-        // Envia apenas o texto na legenda da mídia, sem o bloco externalAdReply
-        await nazu.sendMessage(from, messageOptions, { quoted: info });
+        // 2. Envia o texto do menu JUNTO com o Card de Link separado (Aqui o WhatsApp aceita perfeitamente)
+        await nazu.sendMessage(from, {
+            text: menuText,
+            contextInfo: {
+                forwardingScore: 1,
+                isForwarded: true,
+                externalAdReply: {
+                    title: tituloDoc,
+                    body: corpoDoc,
+                    mediaType: 1,
+                    renderLargerThumbnail: true,
+                    thumbnail: fs.existsSync(menuImagePath) ? fs.readFileSync(menuImagePath) : null,
+                    sourceUrl: `https://github.com`
+                }
+            }
+        }, { quoted: info });
 
     } catch (error) {
         console.error('Erro no menu:', error);

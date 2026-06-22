@@ -10980,86 +10980,47 @@ case 'musica2': {
 break;
 }
 case 'play': {
-    let filePath = null;
     try {
         if (!q) {
             await nazu.sendMessage(from, { react: { text: '❓', key: info.key } }); 
             return reply(`🎵 Digite o nome da música ou cole o link.`);
         }
 
-        // 1. REAÇÃO DE BUSCA
+        // 1. REAÇÃO DE BUSCA E DOWNLOAD
         await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
 
-        const yts = (await import('yt-search')).default;
-        let videoInfo = null;
+        // CAMINHO CORRIGIDO: Como o index.js está em src/, precisamos entrar em funcs/utils/api.js
+        const { downloadMusic } = await import('./funcs/utils/api.js');
 
-        // --- BUSCA INTELIGENTE ---
-        const match = q.match(/(?:youtu\.be\/|youtube\.com(?:\/(?:v|e|embed)\/|\/.*[?&]v=|\/shorts\/))([^"&?\/\s]{11})/);
-        const videoId = match ? match[1] : null;
+        // Chama a função passando o link ou nome digitado no WhatsApp
+        const resultado = await downloadMusic(q);
 
-        if (videoId) {
-            videoInfo = await yts({ videoId: videoId }).catch(() => null);
-        } 
-
-        if (!videoInfo) {
-            const search = await yts(q);
-            videoInfo = search.videos.find(v => v.type === 'video');
-        }
-
-        if (!videoInfo) {
+        // Se a API falhar no download ou busca
+        if (!resultado.success) {
             await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
-            return reply("❌ Música não encontrada.");
+            return reply(`❌ Não foi possível encontrar ou baixar a música.`);
         }
 
-        if (videoInfo.seconds > 1800) { 
-            await nazu.sendMessage(from, { react: { text: '⚠️', key: info.key } });
-            return reply(`⚠️ Muito longo! Máximo 30 min.`);
-        }
+        // 2. REAÇÃO DE ENVIO
+        await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
 
-        // 2. REAÇÃO DE DOWNLOAD
-        await nazu.sendMessage(from, { react: { text: '📥', key: info.key } });
+        // Envia uma mensagem rápida com o nome do arquivo que foi gerado
+        await reply(`📝 *Baixado com sucesso:* ${resultado.filename}`);
 
-        const finalUrl = `https://www.youtube.com/watch?v=${videoInfo.videoId}`;
+        // --- ENVIA O ÁUDIO DIRETAMENTE USANDO O BUFFER GERADO PELA API ---
+        await nazu.sendMessage(from, { 
+            audio: resultado.audioBuffer, // Passa o buffer binário puro da música
+            mimetype: 'audio/mpeg', 
+            ptt: false
+        }, { quoted: info });
         
-        // CHAMA O UTILITÁRIO QUE FAZ O MP3 SEGURO VIA PIPE
-        filePath = await downloadYoutubeM4A_Fast(finalUrl); 
-
-        if (filePath && fs.existsSync(filePath)) {
-            // 3. REAÇÃO DE ENVIO
-            await nazu.sendMessage(from, { react: { text: '🚀', key: info.key } });
-
-            const authorName = videoInfo.author ? (videoInfo.author.name || videoInfo.author) : 'Desconhecido';
-
-            // --- PASSO EXTRA: ENVIA O CARD INFORMATIVO COM A CAPA (100% ESTÁVEL) ---
-            const infoTexto = `📝 *Título:* ${videoInfo.title}\n` +
-                              `👤 *Canal:* ${authorName}\n` +
-                              `⏳ *Duração:* ${videoInfo.timestamp}\n\n` +
-                              `🔗 *Link:* ${videoInfo.url}`;
-
-            await nazu.sendMessage(from, { 
-                image: { url: videoInfo.thumbnail }, 
-                caption: infoTexto 
-            }, { quoted: info });
-
-            // --- PASSO SEGUINTE: ENVIA O ÁUDIO PURO (MÉTODO DO PLAY2) ---
-            await nazu.sendMessage(from, { 
-                audio: { url: filePath }, 
-                mimetype: 'audio/mpeg', // MP3 legítimo, sem máscaras que causam rejeição
-                ptt: false
-            }, { quoted: info });
-            
-            // 4. REAÇÃO DE SUCESSO
-            await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
-        }
+        // 3. REAÇÃO DE SUCESSO
+        await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
         
     } catch (error) {
-        console.error('Erro no comando musica:', error);
+        console.error('Erro no comando play com a nova API:', error.message);
         await nazu.sendMessage(from, { react: { text: '❌', key: info.key } });
         reply("❌ Erro ao processar ou enviar a música.");
-    } finally {
-        if (filePath && fs.existsSync(filePath)) {
-            try { fs.unlinkSync(filePath); } catch (e) {}
-        }
     }
     break;
 }
@@ -11080,35 +11041,42 @@ case 'help':
 case 'comandos':
 case 'commands':
     try {
+        // --- CONFIGURAÇÃO DO CARD (IGUAL AO PRINT) ---
+        const tituloDoc = "ᴘᴀᴜʟᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴs"; 
+        const corpoDoc = "666 KB • TXT"; 
+        // ----------------------------------------------
+
         const menuImagePath = __dirname + '/../midias/menu.jpg';
         const menuVideoPath = __dirname + '/../midias/menu.mp4';
         
+        // Verifica se existe vídeo, se não, usa imagem
         const useVideo = fs.existsSync(menuVideoPath);
         const mediaPath = useVideo ? menuVideoPath : menuImagePath;
+        const mediaBuffer = fs.readFileSync(mediaPath);
 
-        const menuText = await menu(prefix, nomebot, pushname, getMenuDesignWithDefaults(nomebot, pushname));
+        const customDesign = getMenuDesignWithDefaults(nomebot, pushname);
+        const menuText = await menu(prefix, nomebot, pushname, customDesign);
         
         await nazu.sendMessage(from, { react: { text: '🍥', key: info.key } });
        
-        const messageOptions = {
+        await nazu.sendMessage(from, {
+            document: mediaBuffer, // O vídeo ou foto entra como o "arquivo"
             caption: menuText,
+            fileName: tituloDoc,
+            mimetype: 'application/pdf',
             contextInfo: {
                 forwardingScore: 1,
-                isForwarded: true // Mantém a tag de "Encaminhada" se você curtir o visual
+                isForwarded: true,
+                externalAdReply: {
+                    title: tituloDoc,
+                    body: corpoDoc,
+                    mediaType: 1,
+                    renderLargerThumbnail: true, // Deixa a imagem principal grande
+                    thumbnail: fs.readFileSync(menuImagePath), // Foto que aparece no card
+                    sourceUrl: `https://github.com`
+                }
             }
-        };
-
-        if (useVideo) {
-            messageOptions.video = fs.readFileSync(menuVideoPath);
-            messageOptions.mimetype = 'video/mp4';
-            messageOptions.gifPlayback = true;
-        } else if (fs.existsSync(menuImagePath)) {
-            messageOptions.image = fs.readFileSync(menuImagePath);
-            messageOptions.mimetype = 'image/jpeg';
-        }
-
-        // Envia apenas o texto na legenda da mídia, sem o bloco externalAdReply
-        await nazu.sendMessage(from, messageOptions, { quoted: info });
+        }, { quoted: info });
 
     } catch (error) {
         console.error('Erro no menu:', error);

@@ -32,12 +32,12 @@
     },
     {
       "id": "26629048918042@lid",
-      "msg": 56,
+      "msg": 62,
       "cmd": 1,
-      "figu": 7,
+      "figu": 8,
       "pushname": "Mendezz",
       "firstSeen": "2025-11-09T11:04:47.801Z",
-      "lastActivity": "2026-06-16T16:40:52.757Z"
+      "lastActivity": "2026-06-22T18:06:07.911Z"
     },
     {
       "id": "264922910949614@lid",
@@ -50,21 +50,21 @@
     },
     {
       "id": "201855258906710@lid",
-      "msg": 17,
+      "msg": 18,
       "cmd": 0,
       "figu": 1,
-      "pushname": "Bispo",
+      "pushname": "Manoel Bispo",
       "firstSeen": "2025-11-19T09:59:46.914Z",
-      "lastActivity": "2025-11-23T21:38:05.089Z"
+      "lastActivity": "2026-06-22T14:54:59.781Z"
     },
     {
       "id": "241390751596744@lid",
-      "msg": 6,
-      "cmd": 2,
+      "msg": 16,
+      "cmd": 11,
       "figu": 1,
       "pushname": "Paulo",
       "firstSeen": "2026-06-07T16:22:51.512Z",
-      "lastActivity": "2026-06-08T12:20:32.468Z"
+      "lastActivity": "2026-06-22T18:26:45.278Z"
     }
   ],
   "antibtn": false,

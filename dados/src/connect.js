@@ -1,7 +1,7 @@
 // connect.js (Código Completo Revisado - Apenas Bem-vindo e Importação)
 
-import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from 'whaileys';
-const makeWASocket = a.default;
+import a, { Browsers, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+const makeWASocket = a;
 import { Boom } from '@hapi/boom';
 import NodeCache from 'node-cache';
 import readline from 'readline';
@@ -369,6 +369,15 @@ const GLOBAL_BLACKLIST_PATH = path.join(__dirname, '..', 'database', 'dono', 'gl
 
 let msgRetryCounterCache;
 let messagesCache;
+
+// Os listeners de mensagens podem receber eventos assim que o socket abre.
+// Inicialize os caches antes de criar o socket para não perder mensagens
+// enquanto as rotinas de migração/otimização ainda estão executando.
+messagesCache = new Map();
+msgRetryCounterCache = new NodeCache({
+    stdTTL: 5 * 60,
+    useClones: false
+});
 
 async function initializeOptimizedCaches() {
     try {
@@ -1041,39 +1050,22 @@ async function createBotSocket(authDir) {
             saveCreds,
             signalRepository
         } = await useMultiFileAuthState(authDir, makeCacheableSignalKeyStore);
-        const { version } = await fetchBaileysVersionFromGitHub();
+        // Não use a versão da branch master do GitHub: ela pode ser de outra
+        // geração do protocolo e provocar fechamento 428 com este pacote.
+        const { version } = await fetchLatestBaileysVersion();
         const NazunaSock = makeWASocket({
             version,
-            emitOwnEvents: true,
-            fireInitQueries: true,
-            generateHighQualityLinkPreview: true,
-            syncFullHistory: true,
-            markOnlineOnConnect: true,
+            browser: Browsers.ubuntu('Chrome'),
+            markOnlineOnConnect: false,
+            syncFullHistory: false,
             connectTimeoutMs: 120000,
-            retryRequestDelayMs: 5000,
             qrTimeout: 180000,
             keepAliveIntervalMs: 30_000,
-            defaultQueryTimeoutMs: undefined,
-            // Fingerprint humanizado para Chrome no Windows
-            browser: ['Windows', 'Chrome', '120.0.0.0'],
             msgRetryCounterCache,
             auth: state,
             signalRepository,
             logger
         });
-
-        if (codeMode && !NazunaSock.authState.creds.registered) {
-            console.log('📱 Insira o número de telefone (com código de país, ex: +14155552671 ou +551199999999): ');
-            let phoneNumber = await ask('--> ');
-            phoneNumber = phoneNumber.replace(/\D/g, '');
-            if (!/^\d{10,15}$/.test(phoneNumber)) {
-                console.log('⚠️ Número inválido! Use um número válido com código de país (ex: +14155552671 ou +551199999999).');
-                process.exit(1);
-            }
-            const code = await NazunaSock.requestPairingCode(phoneNumber.replaceAll('+', '').replaceAll(' ', '').replaceAll('-', ''));
-            console.log(`🔑 Código de pareamento: ${code}`);
-            console.log('📲 Envie este código no WhatsApp para autenticar o bot.');
-        }
 
         NazunaSock.ev.on('creds.update', saveCreds);
 
@@ -1156,13 +1148,20 @@ async function createBotSocket(authDir) {
             messagesListenerAttached = true;
 
             NazunaSock.ev.on('messages.upsert', async (m) => {
-                if (!m.messages || !Array.isArray(m.messages) || m.type !== 'notify')
+                if (!m.messages || !Array.isArray(m.messages))
                     return;
+
+                // O WhatsApp pode emitir outros tipos de atualização durante a
+                // sincronização. O bot só deve responder a mensagens novas,
+                // mas não pode ficar sem listener enquanto a conexão inicializa.
+                if (m.type !== 'notify') return;
+
+                console.log(`📨 ${m.messages.length} mensagem(ns) recebida(s)`);
                     
                 try {
                     const messageProcessingPromises = m.messages.map(info =>
                         messageQueue.add(info, processMessage).catch(err => {
-                            console.error(`❌ Failed to queue message ${info.key?.id}: ${err.message}`);
+                            console.error(`❌ Falha ao processar mensagem ${info.key?.id}:`, err);
                         })
                     );
                     
@@ -1183,20 +1182,47 @@ async function createBotSocket(authDir) {
             });
         };
 
+        // Registre o listener imediatamente. Antes ele só era anexado dentro
+        // de connection === 'open', depois de migrações potencialmente longas.
+        // Isso fazia o bot conectar, mas ignorar mensagens recebidas nesse
+        // intervalo e aparentar estar sem resposta.
+        attachMessagesListener();
+
+        let pairingCodeRequested = false;
+
         NazunaSock.ev.on('connection.update', async (update) => {
             const {
                 connection,
                 lastDisconnect,
                 qr
             } = update;
-            if (qr && !NazunaSock.authState.creds.registered && !codeMode) {
-                console.log('🔗 QR Code gerado para autenticação:');
-                qrcode.generate(qr, {
-                    small: true
-                }, (qrcodeText) => {
-                    console.log(qrcodeText);
-                });
-                console.log('📱 Escaneie o QR code acima com o WhatsApp para autenticar o bot.');
+            if (qr && !NazunaSock.authState.creds.registered) {
+                if (codeMode) {
+                    if (pairingCodeRequested) return;
+                    pairingCodeRequested = true;
+                    try {
+                        console.log('📱 Insira o número de telefone com código do país, somente dígitos:');
+                        let phoneNumber = await ask('--> ');
+                        phoneNumber = phoneNumber.replace(/\D/g, '');
+                        if (!/^\d{10,15}$/.test(phoneNumber)) {
+                            throw new Error('número inválido; use código do país + número, somente dígitos');
+                        }
+                        const code = await NazunaSock.requestPairingCode(phoneNumber);
+                        console.log(`🔑 Código de pareamento: ${code}`);
+                        console.log('📲 No WhatsApp: Configurações > Dispositivos conectados > Conectar dispositivo > Conectar com número de telefone.');
+                    } catch (pairingError) {
+                        pairingCodeRequested = false;
+                        console.error(`❌ Erro ao solicitar código de pareamento: ${pairingError.message}`);
+                    }
+                } else {
+                    console.log('🔗 QR Code gerado para autenticação:');
+                    qrcode.generate(qr, {
+                        small: true
+                    }, (qrcodeText) => {
+                        console.log(qrcodeText);
+                    });
+                    console.log('📱 Escaneie o QR code acima com o WhatsApp para autenticar o bot.');
+                }
             }
             if (connection === 'open') {
                 console.log(`🔄 Conexão aberta. Inicializando sistema de otimização...`);

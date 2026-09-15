@@ -4,7 +4,7 @@ import axios from 'axios';
 const CONFIG = {
     API: {
         BASE_URL: 'https://tenor.googleapis.com/v2',
-        KEY: "AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ",
+        KEY: process.env.TENOR_API_KEY,
         DEFAULT_PARAMS: {
             contentfilter: 'high',
             media_filter: 'png_transparent',

@@ -230,13 +230,13 @@ async function checkAutoConnect() {
   }
 }
 
-async function hasSavedAuthState() {
+async function hasRegisteredSession() {
   try {
     if (!fsSync.existsSync(AUTH_CREDS_FILE)) return false;
-    const authFiles = await fs.readdir(QR_CODE_DIR);
-    return authFiles.length > 0;
+    const creds = JSON.parse(await fs.readFile(AUTH_CREDS_FILE, 'utf8'));
+    return creds.registered === true && Boolean(creds.me?.id);
   } catch (error) {
-    aviso(`⚠️ Não foi possível verificar a sessão salva: ${error.message}`);
+    aviso(`⚠️ Não foi possível ler a sessão salva: ${error.message}`);
     return false;
   }
 }
@@ -272,6 +272,16 @@ async function promptConnectionMethod() {
   }
 }
 
+async function resetQrSession() {
+  try {
+    await fs.rm(QR_CODE_DIR, { recursive: true, force: true });
+    await fs.mkdir(QR_CODE_DIR, { recursive: true });
+    mensagem('🧹 Sessão antiga removida. Será gerado um novo QR Code.');
+  } catch (error) {
+    throw new Error(`não foi possível limpar a sessão antiga: ${error.message}`);
+  }
+}
+
 async function main() {
   try {
     setupGracefulShutdown();
@@ -279,15 +289,18 @@ async function main() {
     await checkPrerequisites();
     await setupTermuxAutostart();
 
-    if (await hasSavedAuthState()) {
-      mensagem('✅ Dados de autenticação encontrados. Tentando reutilizar a sessão salva.');
+    if (await hasRegisteredSession()) {
+      mensagem('✅ Sessão do WhatsApp encontrada. Reutilizando a autenticação salva.');
       startBot(false);
       return;
     }
 
     const { method } = await promptConnectionMethod();
 
+    // A escolha do usuário prevalece sobre uma sessão antiga. Antes, qualquer
+    // arquivo em qr-code/ fazia a opção 1 ser ignorada e podia causar o 428.
     if (method === 'qr') {
+      await resetQrSession();
       startBot(false);
     } else {
       startBot(true);

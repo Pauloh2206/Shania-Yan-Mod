@@ -32,12 +32,12 @@
     },
     {
       "id": "26629048918042@lid",
-      "msg": 62,
-      "cmd": 1,
-      "figu": 8,
+      "msg": 68,
+      "cmd": 3,
+      "figu": 10,
       "pushname": "Mendezz",
       "firstSeen": "2025-11-09T11:04:47.801Z",
-      "lastActivity": "2026-06-22T18:06:07.911Z"
+      "lastActivity": "2026-09-15T12:56:47.079Z"
     },
     {
       "id": "264922910949614@lid",
@@ -59,17 +59,18 @@
     },
     {
       "id": "241390751596744@lid",
-      "msg": 16,
-      "cmd": 11,
-      "figu": 1,
+      "msg": 25,
+      "cmd": 29,
+      "figu": 3,
       "pushname": "Paulo",
       "firstSeen": "2026-06-07T16:22:51.512Z",
-      "lastActivity": "2026-06-22T18:26:45.278Z"
+      "lastActivity": "2026-09-15T12:56:00.480Z"
     }
   ],
   "antibtn": false,
   "exit": {
     "enabled": true
   },
-  "soadm": false
+  "soadm": false,
+  "modobrincadeira": true
 }

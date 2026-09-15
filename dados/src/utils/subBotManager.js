@@ -1,5 +1,5 @@
-import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from 'whaileys';
-const makeWASocket = a.default;
+import a, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+const makeWASocket = a;
 import { Boom } from '@hapi/boom';
 import NodeCache from 'node-cache';
 import pino from 'pino';
@@ -150,7 +150,8 @@ async function initializeSubBot(botId, phoneNumber, ownerNumber, generatePairing
         const { config, dirs } = createSubBotConfig(botId, phoneNumber, ownerNumber);
         
         const { state, saveCreds } = await useMultiFileAuthState(dirs.authDir, makeCacheableSignalKeyStore);
-        const { version } = await fetchBaileysVersionFromGitHub();
+        // Mantém o protocolo compatível com a versão instalada do pacote.
+        const { version } = await fetchLatestBaileysVersion();
 
         const msgRetryCounterCache = new NodeCache();
 

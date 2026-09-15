@@ -1,84 +1,126 @@
-import { spawn } from 'child_process';
-import path from 'path';
-import fs from 'fs';
+import { spawn, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
+function findDownloader() {
+    const candidates = [
+        { command: 'yt-dlp', prefix: [] },
+        { command: 'python', prefix: ['-m', 'yt_dlp'] },
+        { command: 'python3', prefix: ['-m', 'yt_dlp'] }
+    ];
+
+    for (const candidate of candidates) {
+        try {
+            const result = spawnSync(candidate.command, [...candidate.prefix, '--version'], {
+                stdio: 'ignore',
+                timeout: 5000
+            });
+            if (result.status === 0) return candidate;
+        } catch {
+            // Tenta o próximo executável.
+        }
+    }
+
+    return null;
+}
+
+function safeFileName(value) {
+    return String(value || 'audio')
+        .replace(/[\\/:*?"<>|\x00-\x1F]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 100) || 'audio';
+}
 
 export const youtubeV2Module = {
     /**
-     * Faz o download direto do áudio usando o yt-dlp mascarado com Deno e Stream
-     * @param {string} songLink - URL do vídeo do YouTube
+     * Baixa áudio do YouTube sem cookies, sem Deno e sem playlist.
+     * Requer yt-dlp e ffmpeg. No Termux:
+     * pkg install python ffmpeg
+     * pip install -U yt-dlp
      */
-    download: async (songLink) => {
+    download: async (songLink, title = 'audio') => {
+        const downloader = findDownloader();
+        if (!downloader) {
+            return {
+                ok: false,
+                msg: 'yt-dlp não está instalado. No Termux, execute: pkg install python ffmpeg && pip install -U yt-dlp'
+            };
+        }
+
+        const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'shania-youtube-'));
+        const outputPath = path.join(tempDir, `${safeFileName(title)}.%(ext)s`);
+        const args = [
+            ...downloader.prefix,
+            '--no-playlist',
+            '--no-cache-dir',
+            '--no-check-certificates',
+            '--extract-audio',
+            '--audio-format', 'mp3',
+            '--audio-quality', '128K',
+            '--no-progress',
+            '--newline',
+            '-o', outputPath,
+            songLink
+        ];
+
         return new Promise((resolve) => {
-            try {
-                // Pega os cookies direto da raiz do seu bot
-                const caminhoCookies = path.resolve('./youtube-cookies.txt');
-                const userAgentCelular = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
-
-                // Monta os argumentos separados para o spawn. IMPORTANTE: Adicionado o Deno aqui!
-                const args = [
-                    '--no-warnings',
-                    '--js-runtimes', 'deno', // Ativa o motor JS que você instalou na VPS
-                    '-f', 'bestaudio',
-                    '--extract-audio',
-                    '--audio-format', 'mp3',
-                    '--audio-quality', '128K',
-                    '--user-agent', userAgentCelular,
-                    '-o', '-', // O hífen joga o áudio direto pra memória RAM, sem salvar arquivo no disco
-                    songLink
-                ];
-
-                // Se o arquivo de cookies realmente existir na raiz, injeta ele na lista de argumentos
-                if (fs.existsSync(caminhoCookies)) {
-                    console.log(`[yt-dlp v2] Cookies localizados em: ${caminhoCookies}. Injetando no comando.`);
-                    args.splice(1, 0, '--cookies', caminhoCookies);
-                } else {
-                    console.log(`[yt-dlp v2] AVISO: O arquivo youtube-cookies.txt NÃO foi encontrado na raiz.`);
+            let settled = false;
+            let stderr = '';
+            const finish = async (result) => {
+                if (settled) return;
+                settled = true;
+                try {
+                    const files = await fsp.readdir(tempDir);
+                    const audioFile = files.find(file => /\.(mp3|m4a|webm|opus|ogg)$/i.test(file));
+                    if (result.ok && audioFile) {
+                        const buffer = await fsp.readFile(path.join(tempDir, audioFile));
+                        resolve({ ok: true, buffer });
+                    } else {
+                        resolve(result);
+                    }
+                } catch (error) {
+                    resolve({ ok: false, msg: `Não consegui ler o áudio baixado: ${error.message}` });
+                } finally {
+                    await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
                 }
+            };
 
-                console.log(`[yt-dlp v2] Iniciando extração via Stream com Deno para: ${songLink}`);
-
-                // Usamos o spawn para não estourar o buffer do exec e permitir o uso do Deno estável
-                const processo = spawn('yt-dlp', args);
-                const chunks = [];
-
-                // Captura os pedaços do áudio que o yt-dlp vai jogando na memória
-                processo.stdout.on('data', (chunk) => {
-                    chunks.push(chunk);
-                });
-
-                // Captura possíveis erros que apareçam na saída do terminal
-                processo.stderr.on('data', (data) => {
-                    const msgErro = data.toString();
-                    // Ignora avisos comuns, foca só se for erro crítico
-                    if (msgErro.includes('ERROR:')) {
-                        console.error('[yt-dlp v2 stderr]:', msgErro.trim());
-                    }
-                });
-
-                processo.on('close', (code) => {
-                    if (code !== 0 && chunks.length === 0) {
-                        console.error(`[yt-dlp v2] O processo fechou com erro de código: ${code}`);
-                        return resolve({ ok: false, msg: 'O YouTube bloqueou o servidor. Verifique ou renove seus cookies.' });
-                    }
-
-                    console.log(`[yt-dlp v2] Buffer de áudio gerado com sucesso pelo Stream!`);
-                    const buffer = Buffer.concat(chunks);
-                    
-                    resolve({
-                        ok: true,
-                        buffer: buffer
-                    });
-                });
-
-                processo.on('error', (err) => {
-                    console.error('[yt-dlp v2] Erro fatal ao rodar o spawn:', err.message);
-                    resolve({ ok: false, msg: 'Erro interno ao iniciar o motor de download.' });
-                });
-
+            let processo;
+            try {
+                console.log(`[yt-dlp] Baixando sem cookies: ${songLink}`);
+                processo = spawn(downloader.command, args, { stdio: ['ignore', 'ignore', 'pipe'] });
             } catch (error) {
-                console.error('Erro geral no módulo youtube_v2:', error.message);
-                resolve({ ok: false, msg: 'Erro interno no sistema de download.' });
+                finish({ ok: false, msg: `Não consegui iniciar o yt-dlp: ${error.message}` });
+                return;
             }
+
+            processo.stderr.on('data', (data) => {
+                stderr += data.toString();
+                if (stderr.length > 4000) stderr = stderr.slice(-4000);
+            });
+
+            processo.once('error', (error) => {
+                const detail = error.code === 'ENOENT'
+                    ? 'yt-dlp não foi encontrado. Instale com: pkg install python ffmpeg && pip install -U yt-dlp'
+                    : `Falha ao iniciar o download: ${error.message}`;
+                finish({ ok: false, msg: detail });
+            });
+
+            processo.once('close', (code) => {
+                if (code === 0) {
+                    finish({ ok: true });
+                } else {
+                    const lower = stderr.toLowerCase();
+                    const reason = lower.includes('sign in') || lower.includes('bot')
+                        ? 'O YouTube recusou esta solicitação sem login.'
+                        : 'O yt-dlp não conseguiu baixar este vídeo.';
+                    console.error(`[yt-dlp] código ${code}: ${stderr.trim()}`);
+                    finish({ ok: false, msg: `${reason} Tente outro vídeo.` });
+                }
+            });
         });
     }
 };

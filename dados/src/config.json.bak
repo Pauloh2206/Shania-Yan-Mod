@@ -8,9 +8,5 @@
   "debug": false,
   "enablePanel": false,
   "lidowner": "241390751596744@lid",
-  "apikey": "",
-  "devLogs": {
-    "enabled": true,
-    "jid": "241390751596744@lid"
-  }
+  "apikey": ""
 }

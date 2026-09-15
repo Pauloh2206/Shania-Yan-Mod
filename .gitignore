@@ -1,2 +1,8 @@
 
 node_modules/
+dados/database/qr-code/
+dados/logs/
+.env
+.env.*
+!.env.example
+youtube-cookies.txt

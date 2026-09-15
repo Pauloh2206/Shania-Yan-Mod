@@ -1851,6 +1851,24 @@
       "pushname": "𝐋𝐢𝐚",
       "firstSeen": "2025-11-29T20:05:44.034Z",
       "lastActivity": "2025-11-29T20:07:01.449Z"
+    },
+    {
+      "id": "54117410017450@lid",
+      "msg": 1,
+      "cmd": 0,
+      "figu": 0,
+      "pushname": "♱",
+      "firstSeen": "2026-09-15T11:10:54.772Z",
+      "lastActivity": "2026-09-15T11:10:54.772Z"
+    },
+    {
+      "id": "241390751596744@lid",
+      "msg": 0,
+      "cmd": 1,
+      "figu": 0,
+      "pushname": "Paulo",
+      "firstSeen": "2026-09-15T11:11:25.854Z",
+      "lastActivity": "2026-09-15T11:11:25.854Z"
     }
   ],
   "modorpg": true,
